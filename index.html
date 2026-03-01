@@ -338,10 +338,10 @@
         lucide.createIcons();
         const CHART_POINT_LIMIT = 1500; 
         
-        // ข้อมูล URL ที่ถูกซ่อนไว้ในฝั่ง Javascript
-        const DATA_SOURCES = {
-            'set50': 'https://www.dropbox.com/scl/fi/chh9dnaf372kpwzrr3ygg/S50_Tfexff.csv?rlkey=a04oee7p6g5fx6kho35xjoull&st=yoz50fv6&dl=1',
-            'usd': 'https://www.dropbox.com/scl/fi/o731z4h6nhe6h74xhn4u7/USD_Tfexff.csv?rlkey=par9bba7ctk4n4yrw1cnhzkcz&st=lkxqucnv&dl=1'
+        // เข้ารหัส URL ด้วย Base64 และใช้ชื่อตัวแปรที่ดูคลุมเครือ เพื่อป้องกันการค้นหาเจอ
+        const _ds_map = {
+            'set50': 'aHR0cHM6Ly93d3cuZHJvcGJveC5jb20vc2NsL2ZpL2NoaDlkbmFmMzcya3B3enJyM3lnZy9TNTBfVGZleGZmLmNzdj9ybGtleT1hMDRvZWU3cDZnNWZ4NmtobzM1eGpvdWxsJnN0PXlvejUwZnY2JmRsPTE=',
+            'usd': 'aHR0cHM6Ly93d3cuZHJvcGJveC5jb20vc2NsL2ZpL283MzF6NGg2bmhlNmg3NHhobjR1Ny9VU0RfVGZleGZmLmNzdj9ybGtleT1wYXI5YmJhN2N0azRuNHlydzFjbmh6a2N6JnN0PWxreHF1Y252JmRsPTE='
         };
 
         let masterData = []; 
@@ -584,8 +584,11 @@
 
         els.loadDataBtn.addEventListener('click', async () => {
             const sourceKey = els.dataSourceSelect.value;
-            const url = DATA_SOURCES[sourceKey];
-            if (!url) return;
+            const encodedUrl = _ds_map[sourceKey];
+            if (!encodedUrl) return;
+            
+            // ถอดรหัส Base64 (atob) กลับมาเป็นลิงก์จริงๆ เพื่อให้บราวเซอร์นำไปโหลด
+            const url = atob(encodedUrl);
             
             els.loadingText.innerText = "กำลังดาวน์โหลดไฟล์จาก Cloud..."; 
             els.loadingSubtext.innerText = "อาจใช้เวลา 2-5 วินาที ขึ้นอยู่กับขนาดไฟล์และความเร็วอินเทอร์เน็ต";
