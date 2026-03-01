@@ -24,13 +24,11 @@
             filter: invert(0.6) sepia(1) saturate(3) hue-rotate(100deg);
             cursor: pointer;
         }
-        /* ปรับปรุงการแสดงผลบนมือถือป้องกันปัญหาจอถูกตัด */
         @media (max-width: 767px) {
             #main-content { scroll-margin-top: 20px; }
         }
     </style>
 </head>
-<!-- แก้ไข Layout ตรงนี้: ให้บนมือถือ scroll ได้ปกติ (เอา overflow-hidden ออกบนมือถือ) -->
 <body class="bg-slate-950 text-slate-200 font-sans min-h-screen flex flex-col md:flex-row md:h-screen md:overflow-hidden">
 
     <!-- Tooltip Overlay -->
@@ -62,7 +60,7 @@
         </div>
     </div>
 
-    <!-- Sidebar: Control Panel (เอา h-screen ออกบนมือถือ) -->
+    <!-- Sidebar: Control Panel -->
     <div id="sidebar" class="w-full md:w-[320px] bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 p-5 flex flex-col z-10 shrink-0 shadow-xl md:h-screen md:overflow-y-auto">
         <div class="flex items-center gap-3 mb-5 text-emerald-400 shrink-0">
             <i data-lucide="database" class="w-7 h-7"></i>
@@ -72,9 +70,10 @@
         <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-5 shrink-0">
             <div id="uploadSection">
                 <label class="block text-sm font-medium text-slate-300 mb-2">เลือกข้อมูลที่ต้องการทดสอบ</label>
+                <!-- ซ่อน URL จาก HTML แล้วใช้ Value สั้นๆ แทน -->
                 <select id="dataSourceSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-slate-200 mb-3">
-                    <option value="https://www.dropbox.com/scl/fi/chh9dnaf372kpwzrr3ygg/S50_Tfexff.csv?rlkey=a04oee7p6g5fx6kho35xjoull&st=yoz50fv6&dl=1">1. SET50 (20 Years)</option>
-                    <option value="https://www.dropbox.com/scl/fi/o731z4h6nhe6h74xhn4u7/USD_Tfexff.csv?rlkey=par9bba7ctk4n4yrw1cnhzkcz&st=lkxqucnv&dl=1">2. USD (5 Years)</option>
+                    <option value="set50">1. SET50 (20 Years)</option>
+                    <option value="usd">2. USD (5 Years)</option>
                 </select>
                 <button id="loadDataBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 mb-2 cursor-pointer shadow-lg shadow-blue-900/20">
                     <i data-lucide="cloud-download" class="w-4 h-4"></i> โหลดข้อมูลจาก Cloud
@@ -185,20 +184,19 @@
                 <p>* แม่นยำระดับ 100% ป้องกันจุดหลอกตา</p>
             </div>
             
-            <!-- ปุ่มกดเลื่อนลงไปดูกราฟบนมือถือ -->
             <button onclick="document.getElementById('main-content').scrollIntoView({behavior: 'smooth'})" class="w-full mt-4 bg-slate-700 text-emerald-400 py-2 rounded-lg text-sm md:hidden flex items-center justify-center gap-2">
                 เลื่อนลงไปดูผลลัพธ์และกราฟ <i data-lucide="arrow-down" class="w-4 h-4"></i>
             </button>
         </div>
     </div>
 
-    <!-- Draggable Resizer (เฉพาะบนคอม) -->
+    <!-- Draggable Resizer -->
     <div id="resizer" class="hidden md:flex w-1.5 bg-slate-800 hover:bg-emerald-500 cursor-col-resize z-20 shrink-0 items-center justify-center transition-colors relative group">
         <div class="absolute -left-2 -right-2 h-full cursor-col-resize z-30"></div>
         <div class="w-0.5 h-10 bg-slate-500 group-hover:bg-white rounded transition-colors"></div>
     </div>
 
-    <!-- Main Content: Dashboard (แก้ Layout ตรงนี้ให้มือถือเลื่อนได้) -->
+    <!-- Main Content: Dashboard -->
     <div id="main-content" class="flex-1 p-4 md:p-8 w-full relative md:h-screen md:overflow-y-auto">
         <div id="loadingOverlay" class="loading-overlay rounded-xl">
             <i data-lucide="loader-2" class="w-10 h-10 animate-spin mb-4"></i>
@@ -340,6 +338,12 @@
         lucide.createIcons();
         const CHART_POINT_LIMIT = 1500; 
         
+        // ข้อมูล URL ที่ถูกซ่อนไว้ในฝั่ง Javascript
+        const DATA_SOURCES = {
+            'set50': 'https://www.dropbox.com/scl/fi/chh9dnaf372kpwzrr3ygg/S50_Tfexff.csv?rlkey=a04oee7p6g5fx6kho35xjoull&st=yoz50fv6&dl=1',
+            'usd': 'https://www.dropbox.com/scl/fi/o731z4h6nhe6h74xhn4u7/USD_Tfexff.csv?rlkey=par9bba7ctk4n4yrw1cnhzkcz&st=lkxqucnv&dl=1'
+        };
+
         let masterData = []; 
         let simResultsData = null;
         let fullTradeLog = []; 
@@ -579,7 +583,8 @@
         });
 
         els.loadDataBtn.addEventListener('click', async () => {
-            const url = els.dataSourceSelect.value;
+            const sourceKey = els.dataSourceSelect.value;
+            const url = DATA_SOURCES[sourceKey];
             if (!url) return;
             
             els.loadingText.innerText = "กำลังดาวน์โหลดไฟล์จาก Cloud..."; 
@@ -678,7 +683,7 @@
 
         els.dataSourceSelect.addEventListener('change', (e) => {
             const val = e.target.value;
-            if (val.includes('USD')) {
+            if (val === 'usd') {
                 els.inputs.gridSpacing.value = 0.1;
                 els.inputs.gridSpacingRange.value = 0.1;
                 els.inputs.multiplier.value = 1000;
@@ -695,10 +700,10 @@
         });
 
         els.inputs.startDate.addEventListener('change', () => {
-            clearTimeout(window.runTimeout); window.runTimeout = setTimeout(() => parseAndRun(false), 150);
+            clearTimeout(window.runTimeout); window.runTimeout = setTimeout(() => parseAndRun(true), 150);
         });
         els.inputs.endDate.addEventListener('change', () => {
-            clearTimeout(window.runTimeout); window.runTimeout = setTimeout(() => parseAndRun(false), 150);
+            clearTimeout(window.runTimeout); window.runTimeout = setTimeout(() => parseAndRun(true), 150);
         });
 
         Object.keys(els.inputs).forEach(key => {
@@ -1043,7 +1048,6 @@
             const rawPriceMin = getArrayMin(simResultsData.close);
             const rawPriceMax = getArrayMax(simResultsData.close);
             const priceRange = rawPriceMax - rawPriceMin || 1;
-            // ปรับระยะขอบกราฟเป็นแบบเปอร์เซ็นต์ (5% ของความกว้างราคา) แทนตัวเลขตายตัว
             const priceMin = rawPriceMin - (priceRange * 0.05); 
             const priceMax = rawPriceMax + (priceRange * 0.05);
             
