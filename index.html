@@ -16,7 +16,7 @@
         svg { display: block; width: 100%; height: 100%; overflow: visible; }
         .loading-overlay {
             display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(2, 6, 23, 0.9); z-index: 50;
+            background: rgba(2, 6, 23, 0.95); z-index: 50;
             justify-content: center; align-items: center; flex-direction: column;
             color: #10b981;
         }
@@ -70,14 +70,25 @@
         <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-5 shrink-0">
             <div id="uploadSection">
                 <label class="block text-sm font-medium text-slate-300 mb-2">เลือกข้อมูลที่ต้องการทดสอบ</label>
-                <!-- ซ่อน URL จาก HTML แล้วใช้ Value สั้นๆ แทน -->
                 <select id="dataSourceSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-slate-200 mb-3">
-                    <option value="set50">1. SET50 (20 Years)</option>
-                    <option value="usd">2. USD (5 Years)</option>
+                    <option value="set50">1. SET50 (3 Years)</option>
+                 
                 </select>
-                <button id="loadDataBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 mb-2 cursor-pointer shadow-lg shadow-blue-900/20">
+                <button id="loadDataBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 mb-3 cursor-pointer shadow-lg shadow-blue-900/20">
                     <i data-lucide="cloud-download" class="w-4 h-4"></i> โหลดข้อมูลจาก Cloud
                 </button>
+
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="flex-1 h-px bg-slate-700"></div>
+                    <span class="text-xs text-slate-500">หรือ</span>
+                    <div class="flex-1 h-px bg-slate-700"></div>
+                </div>
+
+                <input type="file" id="localFileInput" accept=".csv" class="hidden">
+                <label for="localFileInput" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer border border-slate-600 border-dashed mb-1">
+                    <i data-lucide="upload" class="w-4 h-4"></i> อัปโหลดไฟล์ CSV (จากเครื่อง)
+                </label>
+                <p class="text-[9px] text-slate-500 text-center leading-tight">*รูปแบบ: Ticker, Date, Time, Open, High, Low, Close</p>
             </div>
             
             <div id="cachedSection" class="hidden">
@@ -179,10 +190,7 @@
                 </div>
             </div>
             
-            <div class="pt-4 border-t border-slate-800 text-xs text-slate-500 space-y-1 shrink-0">
-                <p>* คำนวณจำลองสวิง O-H-L-C แยกสีแท่งเทียน</p>
-                <p>* แม่นยำระดับ 100% ป้องกันจุดหลอกตา</p>
-            </div>
+
             
             <button onclick="document.getElementById('main-content').scrollIntoView({behavior: 'smooth'})" class="w-full mt-4 bg-slate-700 text-emerald-400 py-2 rounded-lg text-sm md:hidden flex items-center justify-center gap-2">
                 เลื่อนลงไปดูผลลัพธ์และกราฟ <i data-lucide="arrow-down" class="w-4 h-4"></i>
@@ -199,9 +207,12 @@
     <!-- Main Content: Dashboard -->
     <div id="main-content" class="flex-1 p-4 md:p-8 w-full relative md:h-screen md:overflow-y-auto">
         <div id="loadingOverlay" class="loading-overlay rounded-xl">
-            <i data-lucide="loader-2" class="w-10 h-10 animate-spin mb-4"></i>
-            <h2 id="loadingText" class="text-xl font-bold text-center">กำลังประมวลผล...</h2>
-            <p id="loadingSubtext" class="text-sm text-slate-400 mt-2 text-center">โปรดรอสักครู่ ห้ามปิดหน้าต่างนี้</p>
+            <i data-lucide="loader-2" class="w-12 h-12 animate-spin mb-4 text-emerald-500"></i>
+            <h2 id="loadingText" class="text-xl font-bold text-center text-emerald-400">กำลังเตรียมการประมวลผล...</h2>
+            <div class="w-64 h-2 bg-slate-800 rounded-full mt-4 overflow-hidden">
+                <div id="progressBar" class="h-full bg-emerald-500 w-0 transition-all duration-75"></div>
+            </div>
+            <p id="loadingSubtext" class="text-xs text-slate-400 mt-3 text-center">โปรดรอสักครู่ ระบบกำลังคำนวณข้อมูลขนาดใหญ่</p>
         </div>
 
         <!-- Stats Grid -->
@@ -338,21 +349,22 @@
         lucide.createIcons();
         const CHART_POINT_LIMIT = 1500; 
         
-        // เข้ารหัส URL ด้วย Base64 และใช้ชื่อตัวแปรที่ดูคลุมเครือ เพื่อป้องกันการค้นหาเจอ
         const _ds_map = {
-            'set50': 'aHR0cHM6Ly93d3cuZHJvcGJveC5jb20vc2NsL2ZpL2NoaDlkbmFmMzcya3B3enJyM3lnZy9TNTBfVGZleGZmLmNzdj9ybGtleT1hMDRvZWU3cDZnNWZ4NmtobzM1eGpvdWxsJnN0PXlvejUwZnY2JmRsPTE=',
+            'set50': 'aHR0cHM6Ly93d3cuZHJvcGJveC5jb20vc2NsL2ZpLzRlNWhyN2tvYXNsb3U2Z3V2djI4OS9TNTBfR3JpZF8xTS5jc3Y/cmxrZXk9cWRsYXFpMGR1azQyZTVjM3J6NHFvM3FqeiZzdD1yNTBrZTI0dyZkbD0x',
             'usd': 'aHR0cHM6Ly93d3cuZHJvcGJveC5jb20vc2NsL2ZpL283MzF6NGg2bmhlNmg3NHhobjR1Ny9VU0RfVGZleGZmLmNzdj9ybGtleT1wYXI5YmJhN2N0azRuNHlydzFjbmh6a2N6JnN0PWxreHF1Y252JmRsPTE='
         };
 
         let masterData = []; 
         let simResultsData = null;
         let fullTradeLog = []; 
+        let calcTimeout = null;
 
         let params = {
             capital: 1000000, upperLimit: 1050, lowerLimit: 750,
             gridSpacing: 10, contractsPerGrid: 1, commission: 20, margin: 10000, multiplier: 200
         };
 
+        // เซฟการ์ดป้องกัน Call stack limit
         const getArrayMax = (arr) => {
             let max = -Infinity;
             for(let i=0; i<arr.length; i++) if(arr[i] > max) max = arr[i];
@@ -363,6 +375,15 @@
             for(let i=0; i<arr.length; i++) if(arr[i] < min) min = arr[i];
             return min;
         };
+
+        // ฟังก์ชันแปลงข้อมูลเป็นจุดวาดกราฟ SVG
+        const mapDataToSVG = (data, w, h, min, max) => {
+            if (!data || data.length === 0) return ''; 
+            const range = max - min || 1;
+            return data.map((d, i) => `${(i / (data.length - 1)) * w},${h - ((d - min) / range) * h}`).join(' ');
+        };
+
+        const yieldToMain = () => new Promise(resolve => setTimeout(resolve, 0));
 
         const sidebar = document.getElementById('sidebar');
         const resizer = document.getElementById('resizer');
@@ -423,8 +444,8 @@
             URL.revokeObjectURL(url);
         });
 
-        const fmtPrice = (num) => num.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
-        const fmtPnl = (num) => num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const fmtPrice = (num) => (num || 0).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+        const fmtPnl = (num) => (num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
         const els = {
             dataSourceSelect: document.getElementById('dataSourceSelect'), 
@@ -433,6 +454,8 @@
             cachedSection: document.getElementById('cachedSection'), dataStatus: document.getElementById('dataStatus'),
             settingsPanel: document.getElementById('settingsPanel'), loadingOverlay: document.getElementById('loadingOverlay'),
             loadingText: document.getElementById('loadingText'), loadingSubtext: document.getElementById('loadingSubtext'), 
+            progressBar: document.getElementById('progressBar'),
+            localFileInput: document.getElementById('localFileInput'),
             inputs: {
                 startDate: document.getElementById('startDate'), endDate: document.getElementById('endDate'),
                 capital: document.getElementById('capital'), upperLimit: document.getElementById('upperLimit'),
@@ -477,10 +500,15 @@
             crosshairs: document.querySelectorAll('.crosshair-sync')
         };
 
+        const updateLoading = (text, percent) => {
+            els.loadingText.innerText = text;
+            els.progressBar.style.width = `${percent}%`;
+        };
+
         let tooltipRAF = null;
         els.interactiveCharts.forEach(container => {
             container.addEventListener('mousemove', (e) => {
-                if (!simResultsData || simResultsData.close.length === 0) return;
+                if (!simResultsData || !simResultsData.close || simResultsData.close.length === 0) return;
                 if (tooltipRAF) cancelAnimationFrame(tooltipRAF);
                 
                 tooltipRAF = requestAnimationFrame(() => {
@@ -540,24 +568,29 @@
         }
 
         async function initApp() {
-            const db = await openDB(); 
-            const tx = db.transaction(STORE_NAME, "readonly");
-            const request = tx.objectStore(STORE_NAME).get("CURRENT_DATA");
-            
-            request.onsuccess = () => {
-                if (request.result && request.result.data && request.result.data.length > 0) {
-                    masterData = request.result.data;
-                    els.uploadSection.classList.add('hidden'); els.cachedSection.classList.remove('hidden');
-                    setupDateInputs(); els.settingsPanel.classList.remove('opacity-50', 'pointer-events-none');
-                    
-                    els.dataStatus.innerHTML = `<span class="text-emerald-400 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> ตรวจสอบข้อมูลเสร็จสมบูรณ์</span>`;
-                    lucide.createIcons();
-                    parseAndRun(true);
-                } else {
-                    els.dataStatus.innerHTML = `<span class="text-amber-400 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> โปรดโหลดข้อมูลจาก Cloud </span>`;
-                    lucide.createIcons();
-                }
-            };
+            try {
+                const db = await openDB(); 
+                const tx = db.transaction(STORE_NAME, "readonly");
+                const request = tx.objectStore(STORE_NAME).get("CURRENT_DATA");
+                
+                request.onsuccess = () => {
+                    if (request.result && request.result.data && request.result.data.length > 0) {
+                        masterData = request.result.data;
+                        els.uploadSection.classList.add('hidden'); els.cachedSection.classList.remove('hidden');
+                        setupDateInputs(); els.settingsPanel.classList.remove('opacity-50', 'pointer-events-none');
+                        
+                        els.dataStatus.innerHTML = `<span class="text-emerald-400 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> ตรวจสอบข้อมูลเสร็จสมบูรณ์</span>`;
+                        lucide.createIcons();
+                        triggerAutoCalc(true);
+                    } else {
+                        els.dataStatus.innerHTML = `<span class="text-amber-400 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> โปรดโหลดข้อมูลจาก Cloud หรืออัปโหลดไฟล์ </span>`;
+                        lucide.createIcons();
+                    }
+                };
+            } catch(e) {
+                 els.dataStatus.innerHTML = `<span class="text-amber-400 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> โปรดโหลดข้อมูลจาก Cloud หรืออัปโหลดไฟล์ </span>`;
+                 lucide.createIcons();
+            }
         }
 
         function setupDateInputs() {
@@ -582,16 +615,96 @@
             }
         });
 
+        async function processCSVText(csvText) {
+            updateLoading("กำลังเตรียมอ่านไฟล์ (Parsing)...", 10);
+            await yieldToMain();
+            
+            const lines = csvText.trim().split(/\r?\n/);
+            const parsed = [];
+            const totalLines = lines.length;
+            
+            let lastYield = performance.now();
+            
+            for (let i = 1; i < totalLines; i++) {
+                if (i % 10000 === 0 && performance.now() - lastYield > 30) { 
+                    updateLoading(`กำลังจัดเรียงข้อมูล ${i.toLocaleString()} / ${totalLines.toLocaleString()} แถว`, 10 + (i/totalLines*60));
+                    await yieldToMain();
+                    lastYield = performance.now();
+                }
+
+                const cols = lines[i].split(','); if (cols.length < 7) continue;
+                const dateRaw = cols[1].trim(); 
+                let timeRaw = cols[2].trim(); 
+                const openPrice = parseFloat(cols[3]); 
+                const highPrice = parseFloat(cols[4]);
+                const lowPrice = parseFloat(cols[5]);
+                const closePrice = parseFloat(cols[6]); 
+                
+                if (!dateRaw || isNaN(openPrice) || isNaN(closePrice) || isNaN(highPrice) || isNaN(lowPrice)) continue;
+                
+                if (timeRaw.includes(':')) {
+                    let [h, m] = timeRaw.split(':');
+                    timeRaw = h.padStart(2, '0') + ':' + m.padStart(2, '0');
+                }
+
+                const parts = dateRaw.split('/');
+                if (parts.length === 3) {
+                    parsed.push({
+                        iso: `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`,
+                        time: `${dateRaw} ${timeRaw}`,
+                        open: openPrice,
+                        high: highPrice,
+                        low: lowPrice,
+                        close: closePrice
+                    });
+                }
+            }
+
+            if (parsed.length > 0) {
+                updateLoading("จัดเรียงเสร็จสิ้น กำลังบันทึกลงฐานข้อมูลในเครื่อง...", 80);
+                els.loadingSubtext.innerText = "กระบวนการนี้ทำเพียงครั้งเดียว โปรดอย่าปิดหน้าต่าง";
+                await yieldToMain();
+                
+                masterData = parsed.sort((a, b) => {
+                    const timeA = a.iso + ' ' + a.time.split(' ')[1];
+                    const timeB = b.iso + ' ' + b.time.split(' ')[1];
+                    return timeA.localeCompare(timeB);
+                });
+
+                updateLoading("บันทึก Database...", 90);
+                await yieldToMain();
+
+                const db = await openDB();
+                const tx = db.transaction(STORE_NAME, "readwrite");
+                tx.objectStore(STORE_NAME).put({ id: "CURRENT_DATA", data: masterData });
+                
+                tx.oncomplete = () => {
+                    els.uploadSection.classList.add('hidden'); 
+                    els.cachedSection.classList.remove('hidden');
+                    setupDateInputs(); 
+                    els.settingsPanel.classList.remove('opacity-50', 'pointer-events-none');
+                    els.dataStatus.innerHTML = `<span class="text-emerald-400 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> โหลดข้อมูลสำเร็จ จำนวน ${masterData.length.toLocaleString()} ข้อมูล</span>`;
+                    lucide.createIcons();
+                    triggerAutoCalc(true); 
+                };
+                tx.onerror = () => {
+                    alert("พื้นที่เบราว์เซอร์ไม่เพียงพอสำหรับข้อมูลขนาดใหญ่ โปรดเคลียร์พื้นที่แคชหรือเปิดในคอมพิวเตอร์");
+                    els.loadingOverlay.style.display = 'none';
+                };
+            } else {
+                alert("รูปแบบไฟล์ CSV ไม่ถูกต้อง โปรดตรวจสอบรูปแบบให้ตรงกับมาตรฐาน");
+                els.loadingOverlay.style.display = 'none';
+            }
+        }
+
         els.loadDataBtn.addEventListener('click', async () => {
             const sourceKey = els.dataSourceSelect.value;
             const encodedUrl = _ds_map[sourceKey];
             if (!encodedUrl) return;
-            
-            // ถอดรหัส Base64 (atob) กลับมาเป็นลิงก์จริงๆ เพื่อให้บราวเซอร์นำไปโหลด
             const url = atob(encodedUrl);
             
-            els.loadingText.innerText = "กำลังดาวน์โหลดไฟล์จาก Cloud..."; 
-            els.loadingSubtext.innerText = "อาจใช้เวลา 2-5 วินาที ขึ้นอยู่กับขนาดไฟล์และความเร็วอินเทอร์เน็ต";
+            updateLoading("กำลังดาวน์โหลดไฟล์จาก Cloud...", 5);
+            els.loadingSubtext.innerText = "อาจใช้เวลา 2-10 วินาที ขึ้นอยู่กับขนาดไฟล์และความเร็วอินเทอร์เน็ต (ข้อมูลขนาดใหญ่อาจถึง 500k แถว)";
             els.loadingOverlay.style.display = 'flex';
             
             try {
@@ -608,81 +721,46 @@
                 if (!response.ok) throw new Error("Network Error");
                 const csvText = await response.text();
                 
-                els.loadingText.innerText = "กำลังอ่านและจัดเรียงไฟล์..."; 
-                
-                setTimeout(async () => {
-                    try {
-                        const lines = csvText.trim().split(/\r?\n/);
-                        const parsed = [];
-                        for (let i = 1; i < lines.length; i++) {
-                            const cols = lines[i].split(','); if (cols.length < 7) continue;
-                            const dateRaw = cols[1].trim(); 
-                            let timeRaw = cols[2].trim(); 
-                            const openPrice = parseFloat(cols[3]); 
-                            const highPrice = parseFloat(cols[4]);
-                            const lowPrice = parseFloat(cols[5]);
-                            const closePrice = parseFloat(cols[6]); 
-                            
-                            if (!dateRaw || isNaN(openPrice) || isNaN(closePrice) || isNaN(highPrice) || isNaN(lowPrice)) continue;
-                            
-                            if (timeRaw.includes(':')) {
-                                let [h, m] = timeRaw.split(':');
-                                timeRaw = h.padStart(2, '0') + ':' + m.padStart(2, '0');
-                            }
+                await processCSVText(csvText);
 
-                            const parts = dateRaw.split('/');
-                            if (parts.length === 3) {
-                                parsed.push({
-                                    iso: `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`,
-                                    time: `${dateRaw} ${timeRaw}`,
-                                    open: openPrice,
-                                    high: highPrice,
-                                    low: lowPrice,
-                                    close: closePrice
-                                });
-                            }
-                        }
-
-                        if (parsed.length > 0) {
-                            els.loadingText.innerText = "กำลังบันทึกลงบราวเซอร์..."; 
-                            
-                            masterData = parsed.sort((a, b) => {
-                                const timeA = a.iso + ' ' + a.time.split(' ')[1];
-                                const timeB = b.iso + ' ' + b.time.split(' ')[1];
-                                return timeA.localeCompare(timeB);
-                            });
-
-                            const db = await openDB();
-                            const tx = db.transaction(STORE_NAME, "readwrite");
-                            tx.objectStore(STORE_NAME).put({ id: "CURRENT_DATA", data: masterData });
-                            
-                            tx.oncomplete = () => {
-                                els.uploadSection.classList.add('hidden'); 
-                                els.cachedSection.classList.remove('hidden');
-                                setupDateInputs(); 
-                                els.settingsPanel.classList.remove('opacity-50', 'pointer-events-none');
-                                els.dataStatus.innerHTML = `<span class="text-emerald-400 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> ดาวน์โหลดและบันทึกข้อมูลสำเร็จ!</span>`;
-                                lucide.createIcons();
-                                parseAndRun(true); 
-                            };
-                            tx.onerror = () => {
-                                alert("พื้นที่เบราว์เซอร์ไม่เพียงพอ โปรดเคลียร์แคช");
-                                els.loadingOverlay.style.display = 'none';
-                            };
-                        } else {
-                            alert("รูปแบบไฟล์ CSV ไม่ถูกต้อง");
-                            els.loadingOverlay.style.display = 'none';
-                        }
-                    } catch(err) {
-                        alert("เกิดข้อผิดพลาดในการประมวลผลไฟล์");
-                        els.loadingOverlay.style.display = 'none';
-                    }
-                }, 50);
             } catch(err) {
-                alert("ไม่สามารถดาวน์โหลดไฟล์ได้ โปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ต หรือลองใหม่อีกครั้ง");
+                alert("ไม่สามารถดาวน์โหลดไฟล์ได้ โปรดตรวจสอบอินเทอร์เน็ต");
                 els.loadingOverlay.style.display = 'none';
             }
         });
+
+        els.localFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            updateLoading("กำลังอ่านไฟล์จากเครื่อง...", 5);
+            els.loadingSubtext.innerText = "โปรดรอสักครู่ ระบบกำลังอ่านข้อมูลไฟล์ของคุณ...";
+            els.loadingOverlay.style.display = 'flex';
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const csvText = event.target.result;
+                await processCSVText(csvText);
+            };
+            reader.onerror = () => {
+                alert("เกิดข้อผิดพลาดในการอ่านไฟล์");
+                els.loadingOverlay.style.display = 'none';
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        });
+
+        const triggerAutoCalc = (autoCalcBounds = false) => {
+            clearTimeout(calcTimeout);
+            els.loadingOverlay.style.display = 'flex';
+            updateLoading("กำลังเตรียมการประมวลผล...", 0);
+            els.loadingSubtext.innerText = "รอคำสั่ง... (ระบบจะหน่วงเวลาเล็กน้อยเพื่อป้องกันการพิมพ์รัวๆ)";
+            
+            calcTimeout = setTimeout(async () => {
+                await yieldToMain(); 
+                parseAndRun(autoCalcBounds);
+            }, 600); 
+        };
 
         els.dataSourceSelect.addEventListener('change', (e) => {
             const val = e.target.value;
@@ -702,297 +780,317 @@
             updateGridInfo();
         });
 
-        els.inputs.startDate.addEventListener('change', () => {
-            clearTimeout(window.runTimeout); window.runTimeout = setTimeout(() => parseAndRun(true), 150);
-        });
-        els.inputs.endDate.addEventListener('change', () => {
-            clearTimeout(window.runTimeout); window.runTimeout = setTimeout(() => parseAndRun(true), 150);
-        });
+        els.inputs.startDate.addEventListener('change', () => triggerAutoCalc(true));
+        els.inputs.endDate.addEventListener('change', () => triggerAutoCalc(true));
 
         Object.keys(els.inputs).forEach(key => {
             if (key === 'startDate' || key === 'endDate') return; 
             els.inputs[key].addEventListener('input', (e) => {
                 if (e.target.id === 'gridSpacingRange') els.inputs.gridSpacing.value = e.target.value;
                 if (e.target.id === 'gridSpacing') els.inputs.gridSpacingRange.value = e.target.value;
-
                 updateGridInfo(); 
-                clearTimeout(window.runTimeout); window.runTimeout = setTimeout(() => parseAndRun(false), 150);
+                triggerAutoCalc(false);
             });
         });
 
+        // อัปเกรด UpdateGridInfo ให้คำนวณเป็นสมการ O(1) เพื่อไม่ให้หน่วงเวลาพิมพ์เลข
         function updateGridInfo() {
-            const up = Math.round(parseFloat(els.inputs.upperLimit.value) * 100) || 0;
-            const lo = Math.round(parseFloat(els.inputs.lowerLimit.value) * 100) || 0;
-            const sp = Math.round(parseFloat(els.inputs.gridSpacing.value) * 100) || 100;
+            const up = Math.max(parseFloat(els.inputs.upperLimit.value) || 0, parseFloat(els.inputs.lowerLimit.value) || 0);
+            const lo = Math.min(parseFloat(els.inputs.upperLimit.value) || 0, parseFloat(els.inputs.lowerLimit.value) || 0);
+            const sp = Math.abs(parseFloat(els.inputs.gridSpacing.value)) || 1;
             const qty = parseFloat(els.inputs.contractsPerGrid.value) || 1;
             const margin = parseFloat(els.inputs.margin.value) || 0;
             const multiplier = parseFloat(els.inputs.multiplier.value) || 0;
 
-            let totalGrids = 0;
-            let maxFloatingLoss = 0;
-
-            if (up >= lo && sp > 0) {
-                totalGrids = Math.floor(Math.round((up - lo) / sp * 1000) / 1000) + 1;
-                for (let p = lo; p <= up; p += sp) {
-                    const levelPrice = p / 100;
-                    const lowerPrice = lo / 100;
-                    maxFloatingLoss += (levelPrice - lowerPrice) * multiplier * qty;
-                }
-            }
-            
-            const totalMargin = totalGrids * qty * margin;
-            const reqCap = totalMargin + maxFloatingLoss;
-            
-            els.info.totalGrids.innerText = `${totalGrids.toLocaleString()} ไม้`;
-            els.info.reqCapital.innerText = `฿${reqCap.toLocaleString()}`;
-            
-            if(els.info.reqDetail) {
-                els.info.reqDetail.innerHTML = `(Margin ฿${totalMargin.toLocaleString()}<br/>เผื่อลากถึงขอบล่าง ฿${maxFloatingLoss.toLocaleString()})`;
-            }
-        }
-
-        function parseAndRun(autoCalcBounds = false) {
-            if(masterData.length === 0) return;
-            const sDate = els.inputs.startDate.value; const eDate = els.inputs.endDate.value;
-            
-            const activeData = masterData.filter(d => d.iso >= sDate && d.iso <= eDate);
-            
-            if (activeData.length === 0) {
-                els.dataStatus.innerHTML = `<span class="text-amber-500 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> ไม่พบข้อมูลในวันดังกล่าว</span>`;
-                lucide.createIcons();
+            if (sp <= 0 || up <= lo) {
+                els.info.totalGrids.innerText = "0 ไม้";
+                els.info.reqCapital.innerText = "฿0";
+                if(els.info.reqDetail) els.info.reqDetail.innerHTML = "";
                 return;
             }
 
-            let maxHigh = -Infinity;
-            let minLow = Infinity;
-            for(let i=0; i<activeData.length; i++) {
-                if(activeData[i].high > maxHigh) maxHigh = activeData[i].high;
-                if(activeData[i].low < minLow) minLow = activeData[i].low;
-            }
+            const numGrids = Math.floor((up - lo) / sp) + 1;
+            const totalMargin = numGrids * qty * margin;
             
-            if (els.labels.upper) els.labels.upper.innerText = `ขอบบน (Max: ${maxHigh})`;
-            if (els.labels.lower) els.labels.lower.innerText = `ขอบล่าง (Min: ${minLow})`;
-
-            if (autoCalcBounds) {
-                els.inputs.upperLimit.value = maxHigh;
-                els.inputs.lowerLimit.value = minLow;
-            }
+            // ใช้สมการหาผลรวม Arithmetic Progression (O(1)) แทนการใช้ Loop
+            const spacingPoints = sp / 100;
+            const maxFloatingLoss = spacingPoints * ((numGrids - 1) * numGrids / 2) * multiplier * qty;
             
-            updateGridInfo(); 
-            
-            els.dataStatus.innerHTML = `<span class="text-emerald-400">จำนวนข้อมูลที่ทดสอบ: ${activeData.length.toLocaleString()} แท่ง</span>`;
-            lucide.createIcons();
-
-            params.capital = parseFloat(els.inputs.capital.value) || 0;
-            params.upperLimit = parseFloat(els.inputs.upperLimit.value) || 0;
-            params.lowerLimit = parseFloat(els.inputs.lowerLimit.value) || 0;
-            params.gridSpacing = parseFloat(els.inputs.gridSpacing.value) || 1;
-            params.contractsPerGrid = parseFloat(els.inputs.contractsPerGrid.value) || 1;
-            params.commission = parseFloat(els.inputs.commission.value) || 0;
-            params.margin = parseFloat(els.inputs.margin.value) || 0;
-            params.multiplier = parseFloat(els.inputs.multiplier.value) || 0;
-            
-            if (params.lowerLimit >= params.upperLimit) {
-                els.loadingOverlay.style.display = 'none';
-                return; 
-            }
-
-            setTimeout(() => runSimulation(activeData), 20);
+            const reqCap = totalMargin + maxFloatingLoss;
+            els.info.totalGrids.innerText = `${numGrids.toLocaleString()} ไม้`;
+            els.info.reqCapital.innerText = `฿${reqCap.toLocaleString()}`;
+            if(els.info.reqDetail) els.info.reqDetail.innerHTML = `(Margin ฿${totalMargin.toLocaleString()}<br/>เผื่อลากถึงขอบล่าง ฿${maxFloatingLoss.toLocaleString()})`;
         }
 
-        const mapDataToSVG = (data, w, h, min, max) => {
-            if (!data || data.length === 0) return ''; const range = max - min || 1;
-            return data.map((d, i) => `${(i / (data.length - 1)) * w},${h - ((d - min) / range) * h}`).join(' ');
-        };
+        async function parseAndRun(autoCalcBounds = false) {
+            try {
+                if(masterData.length === 0) {
+                    els.loadingOverlay.style.display = 'none';
+                    return;
+                }
+                
+                els.loadingSubtext.innerText = "วิเคราะห์ข้อมูล (ความเร็วสูงพิเศษระดับเสี้ยววินาที)";
+                updateLoading("กำลังคัดกรองช่วงวันที่...", 5);
+                await yieldToMain();
+
+                const sDate = els.inputs.startDate.value; const eDate = els.inputs.endDate.value;
+                const activeData = masterData.filter(d => d.iso >= sDate && d.iso <= eDate);
+                
+                if (activeData.length === 0) {
+                    els.dataStatus.innerHTML = `<span class="text-amber-500 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> ไม่พบข้อมูลในวันดังกล่าว</span>`;
+                    lucide.createIcons();
+                    els.loadingOverlay.style.display = 'none';
+                    return;
+                }
+
+                updateLoading("กำลังหาจุดสูงสุด-ต่ำสุด...", 10);
+                await yieldToMain();
+
+                let maxHigh = -Infinity; let minLow = Infinity;
+                let lastYield = performance.now();
+                
+                for(let i=0; i<activeData.length; i++) {
+                    if (i % 20000 === 0 && performance.now() - lastYield > 30) {
+                        await yieldToMain(); 
+                        lastYield = performance.now();
+                    }
+                    if(activeData[i].high > maxHigh) maxHigh = activeData[i].high;
+                    if(activeData[i].low < minLow) minLow = activeData[i].low;
+                }
+                
+                if (els.labels.upper) els.labels.upper.innerText = `ขอบบน (Max: ${maxHigh})`;
+                if (els.labels.lower) els.labels.lower.innerText = `ขอบล่าง (Min: ${minLow})`;
+
+                if (autoCalcBounds) {
+                    els.inputs.upperLimit.value = maxHigh;
+                    els.inputs.lowerLimit.value = minLow;
+                }
+                updateGridInfo(); 
+                
+                els.dataStatus.innerHTML = `<span class="text-emerald-400">จำนวนข้อมูลที่ทดสอบ: ${activeData.length.toLocaleString()} แท่ง</span>`;
+                lucide.createIcons();
+
+                params.capital = parseFloat(els.inputs.capital.value) || 0;
+                params.upperLimit = parseFloat(els.inputs.upperLimit.value) || 0;
+                params.lowerLimit = parseFloat(els.inputs.lowerLimit.value) || 0;
+                params.gridSpacing = parseFloat(els.inputs.gridSpacing.value) || 1;
+                params.contractsPerGrid = parseFloat(els.inputs.contractsPerGrid.value) || 1;
+                params.commission = parseFloat(els.inputs.commission.value) || 0;
+                params.margin = parseFloat(els.inputs.margin.value) || 0;
+                params.multiplier = parseFloat(els.inputs.multiplier.value) || 0;
+                
+                if (params.lowerLimit >= params.upperLimit) {
+                    els.loadingOverlay.style.display = 'none';
+                    return; 
+                }
+
+                await runSimulation(activeData);
+            } catch (err) {
+                console.error("Parse Error: ", err);
+                alert("เกิดข้อผิดพลาดก่อนเริ่มคำนวณ: " + err.message);
+                els.loadingOverlay.style.display = 'none';
+            }
+        }
+
+        async function runSimulation(activeData) {
+            try {
+                const { capital, upperLimit, lowerLimit, gridSpacing, contractsPerGrid, commission, multiplier } = params;
+                
+                const safeUpper = upperLimit;
+                const safeLower = lowerLimit;
+                const safeSpacing = Math.abs(gridSpacing) || 1; // ป้องกันการติดลบหรือ 0
+
+                let numGrids = Math.floor(Math.round((safeUpper - safeLower) / safeSpacing * 1000) / 1000) + 1;
+                if (numGrids > 200000) {
+                    alert("ตั้งช่วงห่างกริดแคบเกินไป (มีจำนวนกริดมากกว่า 200,000 ไม้) ระบบอาจขัดข้อง โปรดปรับใหม่");
+                    els.loadingOverlay.style.display = 'none';
+                    return;
+                }
+
+                const pArr = new Float64Array(numGrids);      
+                const tArr = new Float64Array(numGrids);       
+                const activeArr = new Uint8Array(numGrids);    
+                const entryArr = new Float64Array(numGrids);   
+
+                for (let i = 0; i < numGrids; i++) {
+                    pArr[i] = safeLower + i * safeSpacing;
+                    tArr[i] = pArr[i] + safeSpacing;
+                }
+
+                let realizedPNL = 0; let totalTrades = 0; let totalCommissionAcc = 0;
+                let activeCount = 0; let sumEntry = 0; 
+
+                fullTradeLog = []; 
+                fullTradeLog.push({ time: activeData[0].time, action: 'START', price: activeData[0].open, contracts: '-', comm: '-', pnl: null });
+
+                const len = activeData.length;
+                const curve = {
+                    equity: new Float64Array(len),
+                    pos: new Int32Array(len),
+                    drawdown: new Float64Array(len),
+                    totalPnl: new Float64Array(len),
+                    open: new Float64Array(len),
+                    close: new Float64Array(len),
+                    time: new Array(len)
+                };
+                
+                let maxTotalEquity = capital; let maxDrawdown = 0;
+                let lastPrice = activeData[0].open; 
+
+                const processGap = (prevClose, currentOpen, cTime) => {
+                    if (currentOpen > prevClose) { 
+                        let start = Math.max(0, Math.floor((prevClose - safeLower) / safeSpacing) - 2);
+                        let end = Math.min(numGrids - 1, Math.ceil((currentOpen - safeLower) / safeSpacing) + 2);
+                        for (let j = start; j <= end; j++) {
+                            if (activeArr[j] === 1 && prevClose < tArr[j] && currentOpen >= tArr[j]) {
+                                activeArr[j] = 0; activeCount--; sumEntry -= entryArr[j]; totalTrades++;
+                                const comm = commission * contractsPerGrid;
+                                const grossPnl = (currentOpen - entryArr[j]) * multiplier * contractsPerGrid;
+                                totalCommissionAcc += comm; realizedPNL += (grossPnl - comm);
+                                fullTradeLog.push({ time: cTime, action: 'SELL (GAP)', price: currentOpen, contracts: contractsPerGrid, comm, pnl: grossPnl - (comm * 2) });
+                            }
+                        }
+                    } else if (currentOpen < prevClose) { 
+                        let start = Math.max(0, Math.floor((currentOpen - safeLower) / safeSpacing) - 2);
+                        let end = Math.min(numGrids - 1, Math.ceil((prevClose - safeLower) / safeSpacing) + 2);
+                        for (let j = end; j >= start; j--) {
+                            if (activeArr[j] === 0 && prevClose > pArr[j] && currentOpen <= pArr[j]) {
+                                activeArr[j] = 1; entryArr[j] = currentOpen; activeCount++; sumEntry += currentOpen; totalTrades++;
+                                const comm = commission * contractsPerGrid; totalCommissionAcc += comm; realizedPNL -= comm;
+                                fullTradeLog.push({ time: cTime, action: 'BUY (GAP)', price: currentOpen, contracts: contractsPerGrid, comm, pnl: null });
+                            }
+                        }
+                    }
+                };
+
+                const processIntra = (startP, endP, cTime) => {
+                    if (startP === endP) return;
+                    if (startP > endP) { 
+                        let start = Math.max(0, Math.floor((endP - safeLower) / safeSpacing) - 2);
+                        let end = Math.min(numGrids - 1, Math.ceil((startP - safeLower) / safeSpacing) + 2);
+                        for (let j = end; j >= start; j--) {
+                            if (activeArr[j] === 0 && startP >= pArr[j] && endP <= pArr[j]) {
+                                activeArr[j] = 1; entryArr[j] = pArr[j]; activeCount++; sumEntry += pArr[j]; totalTrades++;
+                                const comm = commission * contractsPerGrid; totalCommissionAcc += comm; realizedPNL -= comm;
+                                fullTradeLog.push({ time: cTime, action: 'BUY', price: pArr[j], contracts: contractsPerGrid, comm, pnl: null });
+                            }
+                        }
+                    } else { 
+                        let start = Math.max(0, Math.floor((startP - safeLower) / safeSpacing) - 2);
+                        let end = Math.min(numGrids - 1, Math.ceil((endP - safeLower) / safeSpacing) + 2);
+                        for (let j = start; j <= end; j++) {
+                            if (activeArr[j] === 1 && startP <= tArr[j] && endP >= tArr[j]) {
+                                activeArr[j] = 0; activeCount--; sumEntry -= entryArr[j]; totalTrades++;
+                                const comm = commission * contractsPerGrid;
+                                const grossPnl = (tArr[j] - entryArr[j]) * multiplier * contractsPerGrid;
+                                totalCommissionAcc += comm; realizedPNL += (grossPnl - comm);
+                                fullTradeLog.push({ time: cTime, action: 'SELL', price: tArr[j], contracts: contractsPerGrid, comm, pnl: grossPnl - (comm * 2) });
+                            }
+                        }
+                    }
+                };
+
+                let lastYieldTime = performance.now();
+                for (let i = 0; i < len; i++) {
+                    if (i % 5000 === 0 && performance.now() - lastYieldTime > 30) {
+                        updateLoading(`กำลังวิ่ง Backtest... ${i.toLocaleString()} แท่ง`, 10 + (i/len * 85));
+                        await yieldToMain();
+                        lastYieldTime = performance.now();
+                    }
+
+                    const tick = activeData[i];
+                    processGap(lastPrice, tick.open, tick.time);
+                    
+                    if (tick.close >= tick.open) {
+                        processIntra(tick.open, tick.low, tick.time);
+                        processIntra(tick.low, tick.high, tick.time);
+                        processIntra(tick.high, tick.close, tick.time);
+                    } else {
+                        processIntra(tick.open, tick.high, tick.time);
+                        processIntra(tick.high, tick.low, tick.time);
+                        processIntra(tick.low, tick.close, tick.time);
+                    }
+                    lastPrice = tick.close; 
+
+                    const unrealizedPNL = ((tick.close * activeCount) - sumEntry) * multiplier * contractsPerGrid;
+                    const dailyTotalEquity = capital + realizedPNL + unrealizedPNL;
+                    if (dailyTotalEquity > maxTotalEquity) maxTotalEquity = dailyTotalEquity;
+                    const currentDrawdown = maxTotalEquity > 0 ? ((maxTotalEquity - dailyTotalEquity) / maxTotalEquity) * 100 : 0;
+                    if (currentDrawdown > maxDrawdown) maxDrawdown = currentDrawdown;
+                    
+                    curve.equity[i] = dailyTotalEquity; 
+                    curve.pos[i] = activeCount * contractsPerGrid;
+                    curve.drawdown[i] = currentDrawdown;
+                    curve.totalPnl[i] = realizedPNL + unrealizedPNL;
+                    curve.open[i] = tick.open;
+                    curve.close[i] = tick.close;
+                    curve.time[i] = tick.time;
+                    
+                    if(fullTradeLog.length >= 150000) {
+                        fullTradeLog = fullTradeLog.slice(-50000);
+                    }
+                }
+
+                updateLoading("ประมวลผลเสร็จสิ้น กำลังวาดกราฟ...", 98);
+                await yieldToMain();
+
+                els.stats.totalEquity.innerText = `฿${fmtPnl(curve.equity[len-1])}`;
+                const eqPercent = ((curve.equity[len-1] - capital) / capital) * 100;
+                els.stats.equityPercent.innerText = `${fmtPrice(eqPercent)}% จากเงินต้น`;
+                els.stats.equityPercent.className = `text-sm mt-2 ${eqPercent >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+                
+                els.stats.realized.innerText = `${realizedPNL >= 0 ? '+' : ''}฿${fmtPnl(realizedPNL)}`;
+                els.stats.realized.className = `text-2xl lg:text-3xl font-bold ${realizedPNL >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+                
+                els.stats.totalComm.innerText = `฿${fmtPnl(totalCommissionAcc)}`;
+                els.stats.active.innerText = curve.pos[len-1];
+                
+                let maxPosInt = 0; for(let i=0; i<len; i++) if(curve.pos[i] > maxPosInt) maxPosInt = curve.pos[i];
+                els.stats.maxPos.innerText = maxPosInt.toLocaleString();
+                
+                const finalUnrl = curve.totalPnl[len-1] - realizedPNL;
+                els.stats.unrealized.innerText = `${finalUnrl >= 0 ? '+' : ''}฿${fmtPnl(finalUnrl)}`;
+                els.stats.unrealized.className = `font-mono text-xs ${finalUnrl < 0 ? 'text-red-400' : 'text-emerald-400'}`;
+                
+                els.stats.drawdown.innerText = `${fmtPrice(maxDrawdown)}%`; 
+                els.stats.trades.innerText = totalTrades.toLocaleString();
+
+                simResultsData = {
+                    open: curve.open, close: curve.close, time: curve.time,
+                    equity: curve.equity, pos: curve.pos, drawdown: curve.drawdown, totalPnl: curve.totalPnl 
+                };
+
+                renderTradeLog(fullTradeLog.slice(-200));
+                drawCharts(
+                    downsample(simResultsData.equity, CHART_POINT_LIMIT), 
+                    downsample(simResultsData.pos, CHART_POINT_LIMIT), 
+                    downsample(simResultsData.drawdown, CHART_POINT_LIMIT), 
+                    downsample(simResultsData.close, CHART_POINT_LIMIT), 
+                    capital, upperLimit, lowerLimit, safeSpacing
+                );
+                
+                els.loadingOverlay.style.display = 'none';
+
+            } catch (err) {
+                console.error("Simulation Error:", err);
+                alert("เกิดความขัดข้องระหว่างการคำนวณ/วาดกราฟ: " + err.message);
+                els.loadingOverlay.style.display = 'none';
+            }
+        }
+
+        // ปรับอัลกอริทึม Downsample ใหม่ให้สมบูรณ์ป้องกัน Array กระโดด และคำนวณไวกว่าเดิม
         const downsample = (arr, limit) => {
-            if (!arr || arr.length <= limit) return arr; const step = Math.ceil(arr.length / limit); const reduced = [];
-            for (let i = 0; i < arr.length; i += step) reduced.push(arr[i]);
-            if ((arr.length - 1) % step !== 0) reduced.push(arr[arr.length - 1]);
+            if (!arr || arr.length === 0) return [];
+            if (arr.length <= limit) return Array.from(arr); 
+            
+            const reduced = new Array(limit);
+            const step = (arr.length - 1) / (limit - 1);
+            
+            for (let i = 0; i < limit; i++) {
+                reduced[i] = arr[Math.round(i * step)];
+            }
             return reduced;
         };
-
-        function runSimulation(activeData) {
-            const { capital, upperLimit, lowerLimit, gridSpacing, contractsPerGrid, commission, multiplier } = params;
-            
-            let gridLevels = [];
-            const safeUpper = Math.round(upperLimit * 100);
-            const safeLower = Math.round(lowerLimit * 100);
-            const safeSpacing = Math.round(gridSpacing * 100);
-
-            for (let p = safeLower; p <= safeUpper; p += safeSpacing) {
-                const levelPrice = p / 100;
-                const targetPrice = (p + safeSpacing) / 100;
-                gridLevels.push({ p: levelPrice, target: targetPrice, active: false, entryPrice: 0 });
-            }
-
-            let realizedPNL = 0; let totalTrades = 0; let totalCommissionAcc = 0;
-            let tradeLog = []; 
-            fullTradeLog = []; 
-            
-            const initialLog = { 
-                time: activeData[0].time, 
-                action: 'START', 
-                price: activeData[0].open, 
-                contracts: '-', 
-                comm: '-', 
-                pnl: null 
-            };
-            tradeLog.push(initialLog);
-            fullTradeLog.push(initialLog);
-
-            const curve = {
-                equity: new Float64Array(activeData.length),
-                pos: new Int32Array(activeData.length),
-                drawdown: new Float64Array(activeData.length),
-                totalPnl: new Float64Array(activeData.length),
-                open: new Float64Array(activeData.length),
-                close: new Float64Array(activeData.length),
-                time: []
-            };
-            
-            let maxTotalEquity = capital; let maxDrawdown = 0;
-            let lastPrice = activeData[0].open; 
-
-            const processGap = (prevClose, currentOpen, cTime) => {
-                if (currentOpen > prevClose) { 
-                    for (let j = 0; j < gridLevels.length; j++) {
-                        const level = gridLevels[j];
-                        if (level.active && prevClose < level.target && currentOpen >= level.target) {
-                            level.active = false; totalTrades++;
-                            const comm = commission * contractsPerGrid;
-                            const grossPnl = Math.round((currentOpen - level.entryPrice) * multiplier * contractsPerGrid * 100) / 100;
-                            totalCommissionAcc += comm; realizedPNL += (grossPnl - comm);
-                            
-                            const logEntry = { time: cTime, action: 'SELL (GAP)', price: currentOpen, contracts: contractsPerGrid, comm: comm, pnl: grossPnl - (comm * 2) };
-                            tradeLog.push(logEntry); fullTradeLog.push(logEntry);
-                            if(tradeLog.length > 400) tradeLog = tradeLog.slice(-200);
-                        }
-                    }
-                } else if (currentOpen < prevClose) { 
-                    for (let j = gridLevels.length - 1; j >= 0; j--) {
-                        const level = gridLevels[j];
-                        if (!level.active && prevClose > level.p && currentOpen <= level.p) {
-                            level.active = true; level.entryPrice = currentOpen; totalTrades++;
-                            const comm = commission * contractsPerGrid; totalCommissionAcc += comm; realizedPNL -= comm;
-                            
-                            const logEntry = { time: cTime, action: 'BUY (GAP)', price: currentOpen, contracts: contractsPerGrid, comm: comm, pnl: null };
-                            tradeLog.push(logEntry); fullTradeLog.push(logEntry);
-                            if(tradeLog.length > 400) tradeLog = tradeLog.slice(-200); 
-                        }
-                    }
-                }
-            };
-
-            const processIntra = (startP, endP, cTime) => {
-                if (startP === endP) return;
-                if (startP > endP) { 
-                    for (let j = gridLevels.length - 1; j >= 0; j--) {
-                        const level = gridLevels[j];
-                        if (!level.active && startP >= level.p && endP <= level.p) {
-                            level.active = true; level.entryPrice = level.p; totalTrades++;
-                            const comm = commission * contractsPerGrid; totalCommissionAcc += comm; realizedPNL -= comm;
-                            
-                            const logEntry = { time: cTime, action: 'BUY', price: level.p, contracts: contractsPerGrid, comm: comm, pnl: null };
-                            tradeLog.push(logEntry); fullTradeLog.push(logEntry);
-                            if(tradeLog.length > 400) tradeLog = tradeLog.slice(-200); 
-                        }
-                    }
-                } else { 
-                    for (let j = 0; j < gridLevels.length; j++) {
-                        const level = gridLevels[j];
-                        if (level.active && startP <= level.target && endP >= level.target) {
-                            level.active = false; totalTrades++;
-                            const comm = commission * contractsPerGrid; 
-                            const grossPnl = Math.round((level.target - level.entryPrice) * multiplier * contractsPerGrid * 100) / 100;
-                            totalCommissionAcc += comm; realizedPNL += (grossPnl - comm);
-                            
-                            const logEntry = { time: cTime, action: 'SELL', price: level.target, contracts: contractsPerGrid, comm: comm, pnl: grossPnl - (comm * 2) };
-                            tradeLog.push(logEntry); fullTradeLog.push(logEntry);
-                            if(tradeLog.length > 400) tradeLog = tradeLog.slice(-200);
-                        }
-                    }
-                }
-            };
-
-            for (let i = 0; i < activeData.length; i++) {
-                const tick = activeData[i];
-                processGap(lastPrice, tick.open, tick.time);
-                
-                if (tick.close >= tick.open) {
-                    processIntra(tick.open, tick.low, tick.time);
-                    processIntra(tick.low, tick.high, tick.time);
-                    processIntra(tick.high, tick.close, tick.time);
-                } else {
-                    processIntra(tick.open, tick.high, tick.time);
-                    processIntra(tick.high, tick.low, tick.time);
-                    processIntra(tick.low, tick.close, tick.time);
-                }
-                
-                lastPrice = tick.close; 
-
-                let unrealizedPNL = 0; let activePosCount = 0;
-                for(let j=0; j<gridLevels.length; j++) {
-                    if (gridLevels[j].active) {
-                        activePosCount++; 
-                        unrealizedPNL += Math.round((tick.close - gridLevels[j].entryPrice) * multiplier * contractsPerGrid * 100) / 100;
-                    }
-                }
-
-                const dailyTotalEquity = Math.round((capital + realizedPNL + unrealizedPNL) * 100) / 100;
-                if (dailyTotalEquity > maxTotalEquity) maxTotalEquity = dailyTotalEquity;
-                const currentDrawdown = maxTotalEquity > 0 ? ((maxTotalEquity - dailyTotalEquity) / maxTotalEquity) * 100 : 0;
-                if (currentDrawdown > maxDrawdown) maxDrawdown = currentDrawdown;
-                
-                curve.equity[i] = dailyTotalEquity; 
-                curve.pos[i] = activePosCount * contractsPerGrid;
-                curve.drawdown[i] = currentDrawdown;
-                curve.totalPnl[i] = realizedPNL + unrealizedPNL;
-                curve.open[i] = tick.open;
-                curve.close[i] = tick.close;
-                curve.time.push(tick.time);
-                
-                if(i === activeData.length - 1) {
-                    els.stats.totalEquity.innerText = `฿${fmtPnl(dailyTotalEquity)}`;
-                    const eqPercent = ((dailyTotalEquity - capital) / capital) * 100;
-                    els.stats.equityPercent.innerText = `${fmtPrice(eqPercent)}% จากเงินต้น`;
-                    els.stats.equityPercent.className = `text-sm mt-2 ${eqPercent >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
-                    
-                    els.stats.realized.innerText = `${realizedPNL >= 0 ? '+' : ''}฿${fmtPnl(realizedPNL)}`;
-                    els.stats.realized.className = `text-2xl lg:text-3xl font-bold ${realizedPNL >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
-                    
-                    els.stats.totalComm.innerText = `฿${fmtPnl(totalCommissionAcc)}`;
-                    els.stats.active.innerText = activePosCount * contractsPerGrid;
-                    els.stats.maxPos.innerText = getArrayMax(curve.pos).toLocaleString();
-                    
-                    els.stats.unrealized.innerText = `${unrealizedPNL >= 0 ? '+' : ''}฿${fmtPnl(unrealizedPNL)}`;
-                    els.stats.unrealized.className = `font-mono text-xs ${unrealizedPNL < 0 ? 'text-red-400' : 'text-emerald-400'}`;
-                    
-                    els.stats.drawdown.innerText = `${fmtPrice(maxDrawdown)}%`; 
-                    els.stats.trades.innerText = totalTrades.toLocaleString();
-                }
-            }
-
-            simResultsData = {
-                open: Array.from(curve.open),
-                close: Array.from(curve.close), 
-                time: curve.time,
-                equity: Array.from(curve.equity),
-                pos: Array.from(curve.pos),
-                drawdown: Array.from(curve.drawdown),
-                totalPnl: Array.from(curve.totalPnl) 
-            };
-
-            renderTradeLog(tradeLog.slice(-200));
-            
-            drawCharts(
-                downsample(simResultsData.equity, CHART_POINT_LIMIT), 
-                downsample(simResultsData.pos, CHART_POINT_LIMIT), 
-                downsample(simResultsData.drawdown, CHART_POINT_LIMIT), 
-                downsample(simResultsData.close, CHART_POINT_LIMIT), 
-                capital, upperLimit, lowerLimit, gridSpacing
-            );
-            els.loadingOverlay.style.display = 'none';
-        }
 
         function renderTradeLog(tradeLog) {
             if (tradeLog.length === 0) {
@@ -1002,8 +1100,8 @@
             let html = '';
             tradeLog.reverse().forEach(t => {
                 let actionClass = '';
-                if (t.action.includes('BUY')) actionClass = 'text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded';
-                else if (t.action.includes('SELL')) actionClass = 'text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded';
+                if (t.action && t.action.includes('BUY')) actionClass = 'text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded';
+                else if (t.action && t.action.includes('SELL')) actionClass = 'text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded';
                 else actionClass = 'text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded font-bold'; 
                 
                 const pnlText = t.pnl !== null ? (t.pnl > 0 ? `<span class="text-emerald-400">+${fmtPnl(t.pnl)}</span>` : `<span class="text-red-400">${fmtPnl(t.pnl)}</span>`) : '<span class="text-slate-600">-</span>';
@@ -1056,8 +1154,17 @@
             
             els.charts.priceLine.setAttribute('points', mapDataToSVG(marketCurve, w, prH, priceMin, priceMax));
             els.charts.gridLinesGroup.innerHTML = '';
+            
+            // ล็อกขีดจำกัดป้องกันเบราว์เซอร์ล่ม หากผู้ใช้อาจเผลอตั้งกริดแคบมากเกินไป
+            let lineCount = 0;
+            const maxAllowedSvgLines = 500; 
+
             for (let p = lowerLimit; p <= upperLimit; p += gridSpacing) {
                 if (p < priceMin || p > priceMax) continue;
+                
+                if (lineCount >= maxAllowedSvgLines) break; // ตัดจบทันทีเมื่อถึงขีดจำกัด
+                lineCount++;
+
                 const yPos = prH - ((p - priceMin) / (priceMax - priceMin || 1)) * prH;
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                 line.setAttribute('x1', '0'); line.setAttribute('x2', '100%'); line.setAttribute('y1', yPos); line.setAttribute('y2', yPos); line.setAttribute('stroke', '#1e293b');
