@@ -72,7 +72,7 @@
                 <label class="block text-sm font-medium text-slate-300 mb-2">เลือกข้อมูลที่ต้องการทดสอบ</label>
                 <select id="dataSourceSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-slate-200 mb-3">
                     <option value="set50">1. SET50 (3 Years)</option>
-                 
+                    <option value="usd">2. USD (5 Years)</option>
                 </select>
                 <button id="loadDataBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 mb-3 cursor-pointer shadow-lg shadow-blue-900/20">
                     <i data-lucide="cloud-download" class="w-4 h-4"></i> โหลดข้อมูลจาก Cloud
@@ -176,22 +176,26 @@
                 </div>
             </div>
             
-            <div class="mt-4 bg-slate-800/80 border border-slate-700 rounded-lg p-3 text-sm shadow-inner shrink-0">
-                <div class="flex justify-between items-center mb-2">
+            <!-- ส่วนแสดงผลเงินลงทุนที่ปรับแก้รูปแบบใหม่ -->
+            <div class="mt-4 bg-slate-800/80 border border-slate-700 rounded-lg p-4 text-sm shadow-inner shrink-0 space-y-3">
+                <div class="flex justify-between items-center">
                     <span class="text-slate-400">จำนวนไม้ทั้งหมด:</span>
                     <span id="infoTotalGrids" class="text-white font-bold">0 ไม้</span>
                 </div>
-                <div class="flex justify-between items-start">
-                    <span class="text-slate-400 whitespace-nowrap mr-2">เงินลงทุนที่ต้องการ:</span>
-                    <div class="text-right">
-                        <div id="infoReqCapital" class="text-amber-400 font-bold">฿0</div>
-                        <div id="infoReqDetail" class="text-[10px] text-slate-500 mt-0.5 leading-tight"></div>
-                    </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">เงินวางหลักประกัน:</span>
+                    <span id="infoTotalMargin" class="text-slate-200 font-mono">฿0</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400 text-xs sm:text-sm">เงินใช้ถือสถานะทั้งหมดในกรอบ:</span>
+                    <span id="infoMaxFloatingLoss" class="text-slate-200 font-mono">฿0</span>
+                </div>
+                <div class="pt-3 border-t border-slate-700 flex justify-between items-center">
+                    <span class="text-slate-300 font-semibold">เงินลงทุนที่ต้องการ:</span>
+                    <span id="infoReqCapital" class="text-amber-400 font-bold text-lg">฿0</span>
                 </div>
             </div>
-            
 
-            
             <button onclick="document.getElementById('main-content').scrollIntoView({behavior: 'smooth'})" class="w-full mt-4 bg-slate-700 text-emerald-400 py-2 rounded-lg text-sm md:hidden flex items-center justify-center gap-2">
                 เลื่อนลงไปดูผลลัพธ์และกราฟ <i data-lucide="arrow-down" class="w-4 h-4"></i>
             </button>
@@ -364,24 +368,38 @@
             gridSpacing: 10, contractsPerGrid: 1, commission: 20, margin: 10000, multiplier: 200
         };
 
-        // เซฟการ์ดป้องกัน Call stack limit
-        const getArrayMax = (arr) => {
+        // เซฟการ์ดป้องกัน Call stack limit โดยเปลี่ยนเป็นรูปแบบ Function Declaration
+        function getArrayMax(arr) {
             let max = -Infinity;
             for(let i=0; i<arr.length; i++) if(arr[i] > max) max = arr[i];
             return max;
-        };
-        const getArrayMin = (arr) => {
+        }
+
+        function getArrayMin(arr) {
             let min = Infinity;
             for(let i=0; i<arr.length; i++) if(arr[i] < min) min = arr[i];
             return min;
-        };
+        }
 
-        // ฟังก์ชันแปลงข้อมูลเป็นจุดวาดกราฟ SVG
-        const mapDataToSVG = (data, w, h, min, max) => {
+        // ฟังก์ชันแปลงข้อมูลเป็นจุดวาดกราฟ SVG (แก้ไขให้เป็น Function Declaration เพื่อป้องกัน ReferenceError)
+        function mapDataToSVG(data, w, h, min, max) {
             if (!data || data.length === 0) return ''; 
             const range = max - min || 1;
             return data.map((d, i) => `${(i / (data.length - 1)) * w},${h - ((d - min) / range) * h}`).join(' ');
-        };
+        }
+
+        function downsample(arr, limit) {
+            if (!arr || arr.length === 0) return [];
+            if (arr.length <= limit) return Array.from(arr); 
+            
+            const reduced = new Array(limit);
+            const step = (arr.length - 1) / (limit - 1);
+            
+            for (let i = 0; i < limit; i++) {
+                reduced[i] = arr[Math.round(i * step)];
+            }
+            return reduced;
+        }
 
         const yieldToMain = () => new Promise(resolve => setTimeout(resolve, 0));
 
@@ -472,8 +490,9 @@
             },
             info: {
                 totalGrids: document.getElementById('infoTotalGrids'),
-                reqCapital: document.getElementById('infoReqCapital'),
-                reqDetail: document.getElementById('infoReqDetail')
+                totalMargin: document.getElementById('infoTotalMargin'),
+                maxFloatingLoss: document.getElementById('infoMaxFloatingLoss'),
+                reqCapital: document.getElementById('infoReqCapital')
             },
             stats: {
                 totalEquity: document.getElementById('statTotalEquity'), equityPercent: document.getElementById('statEquityPercent'),
@@ -793,7 +812,7 @@
             });
         });
 
-        // อัปเกรด UpdateGridInfo ให้คำนวณเป็นสมการ O(1) เพื่อไม่ให้หน่วงเวลาพิมพ์เลข
+        // อัปเกรด UpdateGridInfo แยกบรรทัดให้ชัดเจนและคำนวณเป็นสมการ O(1)
         function updateGridInfo() {
             const up = Math.max(parseFloat(els.inputs.upperLimit.value) || 0, parseFloat(els.inputs.lowerLimit.value) || 0);
             const lo = Math.min(parseFloat(els.inputs.upperLimit.value) || 0, parseFloat(els.inputs.lowerLimit.value) || 0);
@@ -804,22 +823,28 @@
 
             if (sp <= 0 || up <= lo) {
                 els.info.totalGrids.innerText = "0 ไม้";
+                els.info.totalMargin.innerText = "฿0";
+                els.info.maxFloatingLoss.innerText = "฿0";
                 els.info.reqCapital.innerText = "฿0";
-                if(els.info.reqDetail) els.info.reqDetail.innerHTML = "";
                 return;
             }
 
+            // คำนวณจำนวนไม้ทั้งหมด
             const numGrids = Math.floor((up - lo) / sp) + 1;
+            
+            // คำนวณเงินวางหลักประกันทั้งหมด
             const totalMargin = numGrids * qty * margin;
             
-            // ใช้สมการหาผลรวม Arithmetic Progression (O(1)) แทนการใช้ Loop
-            const spacingPoints = sp / 100;
-            const maxFloatingLoss = spacingPoints * ((numGrids - 1) * numGrids / 2) * multiplier * qty;
+            // คำนวณเงินใช้ถือสถานะทั้งหมดในกรอบ (Max Floating Loss) ด้วยสมการ O(1)
+            const maxFloatingLoss = sp * ((numGrids - 1) * numGrids / 2) * multiplier * qty;
             
+            // รวมเงินลงทุนที่ต้องใช้ทั้งหมด
             const reqCap = totalMargin + maxFloatingLoss;
+            
             els.info.totalGrids.innerText = `${numGrids.toLocaleString()} ไม้`;
-            els.info.reqCapital.innerText = `฿${reqCap.toLocaleString()}`;
-            if(els.info.reqDetail) els.info.reqDetail.innerHTML = `(Margin ฿${totalMargin.toLocaleString()}<br/>เผื่อลากถึงขอบล่าง ฿${maxFloatingLoss.toLocaleString()})`;
+            els.info.totalMargin.innerText = `฿${totalMargin.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+            els.info.maxFloatingLoss.innerText = `฿${maxFloatingLoss.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+            els.info.reqCapital.innerText = `฿${reqCap.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
         }
 
         async function parseAndRun(autoCalcBounds = false) {
@@ -898,7 +923,7 @@
                 
                 const safeUpper = upperLimit;
                 const safeLower = lowerLimit;
-                const safeSpacing = Math.abs(gridSpacing) || 1; // ป้องกันการติดลบหรือ 0
+                const safeSpacing = Math.abs(gridSpacing) || 1; 
 
                 let numGrids = Math.floor(Math.round((safeUpper - safeLower) / safeSpacing * 1000) / 1000) + 1;
                 if (numGrids > 200000) {
@@ -1077,20 +1102,6 @@
                 els.loadingOverlay.style.display = 'none';
             }
         }
-
-        // ปรับอัลกอริทึม Downsample ใหม่ให้สมบูรณ์ป้องกัน Array กระโดด และคำนวณไวกว่าเดิม
-        const downsample = (arr, limit) => {
-            if (!arr || arr.length === 0) return [];
-            if (arr.length <= limit) return Array.from(arr); 
-            
-            const reduced = new Array(limit);
-            const step = (arr.length - 1) / (limit - 1);
-            
-            for (let i = 0; i < limit; i++) {
-                reduced[i] = arr[Math.round(i * step)];
-            }
-            return reduced;
-        };
 
         function renderTradeLog(tradeLog) {
             if (tradeLog.length === 0) {
