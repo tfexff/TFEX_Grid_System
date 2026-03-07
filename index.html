@@ -72,7 +72,7 @@
                 <label class="block text-sm font-medium text-slate-300 mb-2">เลือกข้อมูลที่ต้องการทดสอบ</label>
                 <select id="dataSourceSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-slate-200 mb-3">
                     <option value="set50">1. SET50 (3 Years)</option>
-                    <option value="usd">2. USD (5 Years)</option>
+                   
                 </select>
                 <button id="loadDataBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 mb-3 cursor-pointer shadow-lg shadow-blue-900/20">
                     <i data-lucide="cloud-download" class="w-4 h-4"></i> โหลดข้อมูลจาก Cloud
@@ -176,7 +176,7 @@
                 </div>
             </div>
             
-            <!-- ส่วนแสดงผลเงินลงทุนที่ปรับแก้รูปแบบใหม่ -->
+            <!-- ส่วนแสดงผลเงินลงทุน -->
             <div class="mt-4 bg-slate-800/80 border border-slate-700 rounded-lg p-4 text-sm shadow-inner shrink-0 space-y-3">
                 <div class="flex justify-between items-center">
                     <span class="text-slate-400">จำนวนไม้ทั้งหมด:</span>
@@ -368,7 +368,6 @@
             gridSpacing: 10, contractsPerGrid: 1, commission: 20, margin: 10000, multiplier: 200
         };
 
-        // เซฟการ์ดป้องกัน Call stack limit โดยเปลี่ยนเป็นรูปแบบ Function Declaration
         function getArrayMax(arr) {
             let max = -Infinity;
             for(let i=0; i<arr.length; i++) if(arr[i] > max) max = arr[i];
@@ -381,7 +380,6 @@
             return min;
         }
 
-        // ฟังก์ชันแปลงข้อมูลเป็นจุดวาดกราฟ SVG (แก้ไขให้เป็น Function Declaration เพื่อป้องกัน ReferenceError)
         function mapDataToSVG(data, w, h, min, max) {
             if (!data || data.length === 0) return ''; 
             const range = max - min || 1;
@@ -634,6 +632,7 @@
             }
         });
 
+        // ระบบจับคู่วันที่อัจฉริยะ (Universal Date Parser)
         async function processCSVText(csvText) {
             updateLoading("กำลังเตรียมอ่านไฟล์ (Parsing)...", 10);
             await yieldToMain();
@@ -666,10 +665,32 @@
                     timeRaw = h.padStart(2, '0') + ':' + m.padStart(2, '0');
                 }
 
-                const parts = dateRaw.split('/');
-                if (parts.length === 3) {
+                // ==========================================
+                // UNIVERSAL DATE PARSER (ป้องกันวันที่เรียงผิด)
+                // ==========================================
+                let yyyy, mm, dd;
+                let sep = dateRaw.includes('/') ? '/' : (dateRaw.includes('-') ? '-' : (dateRaw.includes('.') ? '.' : ''));
+                
+                if (sep !== '') {
+                    const p = dateRaw.split(sep);
+                    if (p.length === 3) {
+                        if (p[0].length === 4) { // Format: YYYY/MM/DD
+                            yyyy = p[0]; mm = p[1]; dd = p[2];
+                        } else if (p[2].length === 4) { // Format: DD/MM/YYYY or MM/DD/YYYY
+                            yyyy = p[2];
+                            if (parseInt(p[0]) > 12) { dd = p[0]; mm = p[1]; }
+                            else if (parseInt(p[1]) > 12) { mm = p[0]; dd = p[1]; }
+                            else { dd = p[0]; mm = p[1]; } // Default assumption is DD/MM/YYYY
+                        }
+                    }
+                } else if (dateRaw.length === 8 && !isNaN(dateRaw)) { // Format: YYYYMMDD
+                    yyyy = dateRaw.substring(0,4); mm = dateRaw.substring(4,6); dd = dateRaw.substring(6,8);
+                }
+
+                // ตรวจสอบและบันทึก
+                if (yyyy && mm && dd) {
                     parsed.push({
-                        iso: `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`,
+                        iso: `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`,
                         time: `${dateRaw} ${timeRaw}`,
                         open: openPrice,
                         high: highPrice,
@@ -812,7 +833,6 @@
             });
         });
 
-        // อัปเกรด UpdateGridInfo แยกบรรทัดให้ชัดเจนและคำนวณเป็นสมการ O(1)
         function updateGridInfo() {
             const up = Math.max(parseFloat(els.inputs.upperLimit.value) || 0, parseFloat(els.inputs.lowerLimit.value) || 0);
             const lo = Math.min(parseFloat(els.inputs.upperLimit.value) || 0, parseFloat(els.inputs.lowerLimit.value) || 0);
@@ -829,16 +849,9 @@
                 return;
             }
 
-            // คำนวณจำนวนไม้ทั้งหมด
             const numGrids = Math.floor((up - lo) / sp) + 1;
-            
-            // คำนวณเงินวางหลักประกันทั้งหมด
             const totalMargin = numGrids * qty * margin;
-            
-            // คำนวณเงินใช้ถือสถานะทั้งหมดในกรอบ (Max Floating Loss) ด้วยสมการ O(1)
             const maxFloatingLoss = sp * ((numGrids - 1) * numGrids / 2) * multiplier * qty;
-            
-            // รวมเงินลงทุนที่ต้องใช้ทั้งหมด
             const reqCap = totalMargin + maxFloatingLoss;
             
             els.info.totalGrids.innerText = `${numGrids.toLocaleString()} ไม้`;
@@ -887,8 +900,12 @@
                 if (els.labels.lower) els.labels.lower.innerText = `ขอบล่าง (Min: ${minLow})`;
 
                 if (autoCalcBounds) {
-                    els.inputs.upperLimit.value = maxHigh;
-                    els.inputs.lowerLimit.value = minLow;
+                    const sp = Math.abs(parseFloat(els.inputs.gridSpacing.value)) || 1;
+                    const suggestedUpper = Math.ceil(maxHigh / sp) * sp;
+                    const suggestedLower = Math.floor(minLow / sp) * sp;
+                    
+                    els.inputs.upperLimit.value = Math.round(suggestedUpper * 10000) / 10000;
+                    els.inputs.lowerLimit.value = Math.round(suggestedLower * 10000) / 10000;
                 }
                 updateGridInfo(); 
                 
