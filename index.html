@@ -95,7 +95,6 @@
                 <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">ข้อมูลที่ทำการทดสอบ</label>
                 <select id="dataSourceSelect" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-slate-800 dark:text-slate-200 mb-3 cursor-pointer">
                     <option value="set50">1. SET50 (ALL)</option>
-
                 </select>
             </div>
             
@@ -120,11 +119,11 @@
                 <div class="grid grid-cols-2 gap-2 mb-3">
                     <div>
                         <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">เริ่มวันที่</label>
-                        <input type="date" id="startDate" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded py-1.5 px-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-800 dark:text-slate-300">
+                        <input type="date" id="startDate" value="2026-04-20" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded py-1.5 px-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-800 dark:text-slate-300">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">ถึงวันที่</label>
-                        <input type="date" id="endDate" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded py-1.5 px-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-800 dark:text-slate-300">
+                        <input type="date" id="endDate" value="2026-04-29" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded py-1.5 px-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-800 dark:text-slate-300">
                     </div>
                 </div>
                 
@@ -138,7 +137,7 @@
             <div class="border-t border-slate-200 dark:border-slate-800 pt-3">
                 <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">เงินลงทุนเริ่มต้น (บาท)</label>
                 <div>
-                    <input type="text" inputmode="decimal" id="capital" value="200,000" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono text-slate-800 dark:text-slate-200 transition-colors">
+                    <input type="text" inputmode="decimal" id="capital" value="500,000" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono text-slate-800 dark:text-slate-200 transition-colors">
                 </div>
             </div>
 
@@ -148,27 +147,27 @@
                         <span id="labelLower">ขอบล่าง</span>
                         <i data-lucide="zap" class="w-3 h-3 text-emerald-500" title="อ้างอิงต่ำสุด"></i>
                     </label>
-                    <input type="text" inputmode="decimal" id="lowerLimit" value="750" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-red-500 dark:text-red-400 font-bold font-mono transition-colors">
+                    <input type="text" inputmode="decimal" id="lowerLimit" value="942" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-red-500 dark:text-red-400 font-bold font-mono transition-colors">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 flex justify-between items-center">
                         <span id="labelUpper">ขอบบน</span>
                         <i data-lucide="zap" class="w-3 h-3 text-emerald-500" title="อ้างอิงสูงสุด"></i>
                     </label>
-                    <input type="text" inputmode="decimal" id="upperLimit" value="1,050" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold font-mono transition-colors">
+                    <input type="text" inputmode="decimal" id="upperLimit" value="975" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold font-mono transition-colors">
                 </div>
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">ช่วงห่างกริด (จุด)</label>
                 <div class="flex items-center gap-3">
-                    <input type="range" id="gridSpacingRange" min="0.1" max="20" step="0.1" value="3" class="w-full accent-emerald-500 cursor-pointer">
-                    <input type="number" id="gridSpacing" min="0.1" max="20" step="0.1" value="3" class="bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-1.5 px-2 text-sm focus:outline-none focus:border-emerald-500 w-20 text-center text-emerald-600 dark:text-emerald-400 font-mono transition-colors">
+                    <input type="range" id="gridSpacingRange" min="0.1" max="20" step="0.1" value="1" class="w-full accent-emerald-500 cursor-pointer">
+                    <input type="number" id="gridSpacing" min="0.1" max="20" step="0.1" value="1" class="bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-1.5 px-2 text-sm focus:outline-none focus:border-emerald-500 w-20 text-center text-emerald-600 dark:text-emerald-400 font-mono transition-colors">
                 </div>
                 <div class="flex gap-2 mt-2">
                     <button id="btnGrid1" class="flex-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 py-1 rounded border border-slate-200 dark:border-slate-700 transition-colors">1 จุด</button>
+                    <button id="btnGrid2" class="flex-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 py-1 rounded border border-slate-200 dark:border-slate-700 transition-colors">2 จุด</button>
                     <button id="btnGrid3" class="flex-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 py-1 rounded border border-slate-200 dark:border-slate-700 transition-colors">3 จุด</button>
-                    <button id="btnGrid5" class="flex-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 py-1 rounded border border-slate-200 dark:border-slate-700 transition-colors">5 จุด</button>
                 </div>
             </div>
 
@@ -190,7 +189,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">หลักประกัน</label>
-                    <input type="text" inputmode="decimal" id="margin" value="10,000" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono text-slate-800 dark:text-slate-200 transition-colors">
+                    <input type="text" inputmode="decimal" id="margin" value="15,000" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono text-slate-800 dark:text-slate-200 transition-colors">
                 </div>
             </div>
             
@@ -384,6 +383,7 @@
         lucide.createIcons();
         const CHART_POINT_LIMIT = 1500; 
         
+        // ข้อมูล URL (ALL)
         const _ds_map = {
             'set50': 'aHR0cHM6Ly93d3cuZHJvcGJveC5jb20vc2NsL2ZpL3FydjJyMzY0eDhscnQ5OWs1N2x1Yy9TNTAxXzFtX0FMTC5jc3Y/cmxrZXk9ZGIwZ3dtNjY4bTF5eTF4cXBvbHp5ZGpoZyZzdD05Zm05ZWx0ZyZkbD0x',
             'usd': 'aHR0cHM6Ly93d3cuZHJvcGJveC5jb20vc2NsL2ZpL283MzF6NGg2bmhlNmg3NHhobjR1Ny9VU0RfVGZleGZmLmNzdj9ybGtleT1wYXI5YmJhN2N0azRuNHlydzFjbmh6a2N6JnN0PWxreHF1Y252JmRsPTE='
@@ -394,10 +394,11 @@
         let fullTradeLog = []; 
         let calcTimeout = null;
         let lastChartParams = null;
+        let isFirstLoad = true; // Flag สำหรับเช็คการเปิดครั้งแรก
 
         let params = {
-            capital: 200000, upperLimit: 1050, lowerLimit: 750,
-            gridSpacing: 3, contractsPerGrid: 1, commission: 18, margin: 10000, multiplier: 200
+            capital: 500000, upperLimit: 975, lowerLimit: 942,
+            gridSpacing: 1, contractsPerGrid: 1, commission: 18, margin: 15000, multiplier: 200
         };
 
         function getArrayMax(arr) {
@@ -630,7 +631,7 @@
             });
         });
 
-        // ฟังก์ชันตั้งค่าวันที่เริ่มต้น ให้ดึง 2 วันล่าสุดของข้อมูล
+        // ฟังก์ชันตั้งค่าวันที่อัตโนมัติ
         function setupDateInputs() {
             if (masterData.length === 0) return;
             
@@ -645,8 +646,11 @@
             els.inputs.endDate.min = uniqueDates[0]; 
             els.inputs.endDate.max = maxD;
             
-            els.inputs.startDate.value = minD; 
-            els.inputs.endDate.value = maxD;
+            // ข้ามการอัปเดตช่องวันที่ ถ้าเป็นการรันครั้งแรกสุด (เพราะเรากำหนดให้วันที่เริ่มต้นเป็นค่าที่คุณต้องการ)
+            if (!isFirstLoad) {
+                els.inputs.startDate.value = minD; 
+                els.inputs.endDate.value = maxD;
+            }
         }
 
         // Helper Get Value from Input stripping commas
@@ -743,7 +747,7 @@
             }
 
             if (parsed.length > 0) {
-                updateLoading("กำลังประมวลผลข้อมูล (ไม่เซฟลงเครื่อง)...", 80);
+                updateLoading("กำลังประมวลผลข้อมูล...", 80);
                 await yieldToMain();
                 
                 masterData = parsed.sort((a, b) => {
@@ -763,7 +767,15 @@
                 setupDateInputs(); 
                 els.dataStatus.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> โหลดข้อมูลสำเร็จ จำนวน ${masterData.length.toLocaleString()} ข้อมูล</span>`;
                 lucide.createIcons();
-                triggerAutoCalc(true); 
+                
+                // สำหรับการโหลดครั้งแรก ไม่ต้องคำนวณขอบออโต้ ให้ยึดจาก HTML เดิม (942, 975)
+                if (isFirstLoad) {
+                    triggerAutoCalc(false);
+                    isFirstLoad = false;
+                } else {
+                    triggerAutoCalc(true); 
+                }
+
             } else {
                 alert("รูปแบบไฟล์ CSV ไม่ถูกต้อง โปรดตรวจสอบรูปแบบให้ตรงกับมาตรฐาน");
                 els.loadingOverlay.style.display = 'none';
@@ -819,10 +831,10 @@
                 els.inputs.margin.value = "1,000";
                 els.inputs.commission.value = "5";
             } else {
-                els.inputs.gridSpacing.value = 3;
-                els.inputs.gridSpacingRange.value = 3;
+                els.inputs.gridSpacing.value = 1;
+                els.inputs.gridSpacingRange.value = 1;
                 els.inputs.multiplier.value = "200";
-                els.inputs.margin.value = "10,000";
+                els.inputs.margin.value = "15,000";
                 els.inputs.commission.value = "18"; 
             }
             updateGridInfo();
@@ -868,7 +880,7 @@
         document.getElementById('btn1Month').addEventListener('click', () => adjustStartDate(0, 1, 0));
         document.getElementById('btn1Year').addEventListener('click', () => adjustStartDate(1, 0, 0));
 
-        // ปุ่ม Grid Shortcuts
+        // ปุ่ม Grid Shortcuts เปลี่ยนเป็น 1, 2, 3
         const setGridSpacing = (val) => {
             els.inputs.gridSpacing.value = val;
             els.inputs.gridSpacingRange.value = val;
@@ -876,8 +888,8 @@
             triggerAutoCalc(false);
         };
         document.getElementById('btnGrid1').addEventListener('click', () => setGridSpacing(1));
+        document.getElementById('btnGrid2').addEventListener('click', () => setGridSpacing(2));
         document.getElementById('btnGrid3').addEventListener('click', () => setGridSpacing(3));
-        document.getElementById('btnGrid5').addEventListener('click', () => setGridSpacing(5));
 
         els.inputs.startDate.addEventListener('change', () => triggerAutoCalc(true));
         els.inputs.endDate.addEventListener('change', () => triggerAutoCalc(true));
