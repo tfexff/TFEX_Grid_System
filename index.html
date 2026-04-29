@@ -23,9 +23,24 @@
         input[type="date"]::-webkit-calendar-picker-indicator {
             filter: invert(0.6) sepia(1) saturate(3) hue-rotate(100deg);
             cursor: pointer;
+            padding: 4px;
         }
         @media (max-width: 767px) {
             #main-content { scroll-margin-top: 20px; }
+        }
+        /* Transition สำหรับกล่อง Accordion */
+        .summary-content {
+            transition: all 0.3s ease-in-out;
+            max-height: 500px;
+            opacity: 1;
+        }
+        .summary-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            padding-top: 0;
+            padding-bottom: 0;
+            margin-top: 0;
         }
     </style>
 </head>
@@ -69,26 +84,11 @@
 
         <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-5 shrink-0">
             <div id="uploadSection">
-                <label class="block text-sm font-medium text-slate-300 mb-2">เลือกข้อมูลที่ต้องการทดสอบ</label>
-                <select id="dataSourceSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-slate-200 mb-3">
-                    <option value="set50">1. SET50 (ย้อนหลัง 3 ปี)</option>
-             
+                <label class="block text-sm font-medium text-slate-300 mb-2">ข้อมูลที่ทำการทดสอบ</label>
+                <select id="dataSourceSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-slate-200 mb-3 cursor-pointer">
+                    <option value="set50">1. SET50 (ALL)</option>
+                    <option value="usd">2. USD (5 Years)</option>
                 </select>
-                <button id="loadDataBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 mb-3 cursor-pointer shadow-lg shadow-blue-900/20">
-                    <i data-lucide="cloud-download" class="w-4 h-4"></i> โหลดข้อมูลจาก Cloud
-                </button>
-
-                <div class="flex items-center gap-2 mb-3">
-                    <div class="flex-1 h-px bg-slate-700"></div>
-                    <span class="text-xs text-slate-500">หรือ</span>
-                    <div class="flex-1 h-px bg-slate-700"></div>
-                </div>
-
-                <input type="file" id="localFileInput" accept=".csv" class="hidden">
-                <label for="localFileInput" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer border border-slate-600 border-dashed mb-1">
-                    <i data-lucide="upload" class="w-4 h-4"></i> อัปโหลดไฟล์ CSV (จากเครื่อง)
-                </label>
-                <p class="text-[9px] text-slate-500 text-center leading-tight">*รูปแบบ: Ticker, Date, Time, Open, High, Low, Close</p>
             </div>
             
             <div id="cachedSection" class="hidden">
@@ -96,20 +96,20 @@
                     <i data-lucide="check-circle" class="w-4 h-4"></i> มีข้อมูลในระบบพร้อมใช้
                 </div>
                 <button id="clearDataBtn" class="w-full bg-slate-700 hover:bg-red-600/80 text-white text-xs py-1.5 px-3 rounded transition-colors flex items-center justify-center gap-1">
-                    <i data-lucide="trash-2" class="w-3 h-3"></i> Refresh ข้อมูลหรือเปลี่ยน Symbol
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh ข้อมูลใหม่
                 </button>
             </div>
 
             <div id="dataStatus" class="text-xs text-slate-400 leading-relaxed mt-3 border-t border-slate-700 pt-2">
-                <span class="text-amber-400 flex items-center gap-1"><i data-lucide="loader" class="w-3 h-3 animate-spin"></i> กำลังตรวจสอบข้อมูล...</span>
+                <span class="text-amber-400 flex items-center gap-1"><i data-lucide="loader" class="w-3 h-3 animate-spin"></i> กำลังโหลดข้อมูลอัตโนมัติ...</span>
             </div>
         </div>
 
-        <div class="space-y-4 flex-1 opacity-50 pointer-events-none transition-opacity pb-4" id="settingsPanel">
+        <div class="space-y-4 flex-1 pb-4" id="settingsPanel">
             
             <div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800">
-                <label class="block text-xs font-semibold text-emerald-400 mb-2 uppercase tracking-wide">ช่วงเวลาทดสอบ</label>
-                <div class="grid grid-cols-2 gap-2">
+                <label class="block text-xs font-semibold text-emerald-400 mb-2 uppercase tracking-wide">ช่วงเวลาทดสอบ (พิมพ์หรือเลือกปฏิทิน)</label>
+                <div class="grid grid-cols-2 gap-2 mb-3">
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">เริ่มวันที่</label>
                         <input type="date" id="startDate" class="w-full bg-slate-900 border border-slate-700 rounded py-1.5 px-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-300">
@@ -119,80 +119,99 @@
                         <input type="date" id="endDate" class="w-full bg-slate-900 border border-slate-700 rounded py-1.5 px-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-300">
                     </div>
                 </div>
+                
+                <!-- ปุ่มด่วน 1 วัน, 1 เดือน, 1 ปี -->
+                <div class="flex gap-2">
+                    <button id="btn1Day" class="flex-1 bg-slate-800 hover:bg-slate-700 text-[10px] sm:text-xs text-slate-300 py-1.5 rounded border border-slate-700 transition-colors">1 วัน</button>
+                    <button id="btn1Month" class="flex-1 bg-slate-800 hover:bg-slate-700 text-[10px] sm:text-xs text-slate-300 py-1.5 rounded border border-slate-700 transition-colors">1 เดือน</button>
+                    <button id="btn1Year" class="flex-1 bg-slate-800 hover:bg-slate-700 text-[10px] sm:text-xs text-slate-300 py-1.5 rounded border border-slate-700 transition-colors">1 ปี</button>
+                </div>
             </div>
 
             <div class="border-t border-slate-800 pt-3">
                 <label class="block text-sm font-medium text-slate-400 mb-1">เงินลงทุนเริ่มต้น (บาท)</label>
-                <div class="relative">
-                    <i data-lucide="dollar-sign" class="absolute left-3 top-2.5 text-slate-500 w-[16px] h-[16px]"></i>
-                    <input type="number" id="capital" value="1000000" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 pl-9 pr-3 text-sm focus:outline-none focus:border-emerald-500">
+                <div>
+                    <input type="text" inputmode="decimal" id="capital" value="200,000" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono">
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-sm font-medium text-slate-400 mb-1 flex justify-between items-center">
-                        <span id="labelUpper">ขอบบน</span>
-                        <i data-lucide="zap" class="w-3 h-3 text-emerald-500" title="อ้างอิงสูงสุด"></i>
-                    </label>
-                    <input type="number" step="0.1" id="upperLimit" value="1050" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-emerald-400 font-bold">
-                </div>
+                <!-- สลับเอาขอบล่างขึ้นมาก่อน -->
                 <div>
                     <label class="block text-sm font-medium text-slate-400 mb-1 flex justify-between items-center">
                         <span id="labelLower">ขอบล่าง</span>
                         <i data-lucide="zap" class="w-3 h-3 text-emerald-500" title="อ้างอิงต่ำสุด"></i>
                     </label>
-                    <input type="number" step="0.1" id="lowerLimit" value="750" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-red-400 font-bold">
+                    <input type="text" inputmode="decimal" id="lowerLimit" value="750" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-red-400 font-bold font-mono">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-1 flex justify-between items-center">
+                        <span id="labelUpper">ขอบบน</span>
+                        <i data-lucide="zap" class="w-3 h-3 text-emerald-500" title="อ้างอิงสูงสุด"></i>
+                    </label>
+                    <input type="text" inputmode="decimal" id="upperLimit" value="1,050" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-emerald-400 font-bold font-mono">
                 </div>
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-slate-400 mb-1">ช่วงห่างกริด (จุด)</label>
                 <div class="flex items-center gap-3">
-                    <input type="range" id="gridSpacingRange" min="0.1" max="20" step="0.1" value="10" class="w-full accent-emerald-500 cursor-pointer">
-                    <input type="number" id="gridSpacing" min="0.1" max="20" step="0.1" value="10" class="bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-sm focus:outline-none focus:border-emerald-500 w-20 text-center text-emerald-400 font-mono">
+                    <input type="range" id="gridSpacingRange" min="0.1" max="20" step="0.1" value="3" class="w-full accent-emerald-500 cursor-pointer">
+                    <input type="number" id="gridSpacing" min="0.1" max="20" step="0.1" value="3" class="bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-sm focus:outline-none focus:border-emerald-500 w-20 text-center text-emerald-400 font-mono">
+                </div>
+                <div class="flex gap-2 mt-2">
+                    <button id="btnGrid1" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 py-1 rounded border border-slate-700 transition-colors">1 จุด</button>
+                    <button id="btnGrid3" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 py-1 rounded border border-slate-700 transition-colors">3 จุด</button>
+                    <button id="btnGrid5" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 py-1 rounded border border-slate-700 transition-colors">5 จุด</button>
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-sm font-medium text-slate-400 mb-1">สัญญา/ไม้</label>
-                    <input type="number" id="contractsPerGrid" value="1" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500">
+                    <input type="text" inputmode="decimal" id="contractsPerGrid" value="1" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono">
                 </div>
                 <div>
+                    <!-- ค่าคอมมิชชั่น 18 -->
                     <label class="block text-sm font-medium text-slate-400 mb-1">ค่าคอมฯ/สัญญา</label>
-                    <input type="number" id="commission" value="20" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500">
+                    <input type="text" inputmode="decimal" id="commission" value="18" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono">
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-sm font-medium text-slate-400 mb-1">กำไร/จุด (บาท)</label>
-                    <input type="number" id="multiplier" value="200" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500">
+                    <input type="text" inputmode="decimal" id="multiplier" value="200" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-400 mb-1">หลักประกัน</label>
-                    <input type="number" id="margin" value="10000" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500">
+                    <input type="text" inputmode="decimal" id="margin" value="10,000" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono">
                 </div>
             </div>
             
-            <!-- ส่วนแสดงผลเงินลงทุน -->
-            <div class="mt-4 bg-slate-800/80 border border-slate-700 rounded-lg p-4 text-sm shadow-inner shrink-0 space-y-3">
-                <div class="flex justify-between items-center">
-                    <span class="text-slate-400">จำนวนไม้ทั้งหมด:</span>
-                    <span id="infoTotalGrids" class="text-white font-bold">0 ไม้</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-slate-400">เงินวางหลักประกัน:</span>
-                    <span id="infoTotalMargin" class="text-slate-200 font-mono">฿0</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-slate-400 text-xs sm:text-sm">เงินใช้ถือสถานะทั้งหมดในกรอบ:</span>
-                    <span id="infoMaxFloatingLoss" class="text-slate-200 font-mono">฿0</span>
-                </div>
-                <div class="pt-3 border-t border-slate-700 flex justify-between items-center">
-                    <span class="text-slate-300 font-semibold">เงินลงทุนที่ต้องการ:</span>
-                    <span id="infoReqCapital" class="text-amber-400 font-bold text-lg">฿0</span>
+            <!-- ส่วนแสดงผลเงินลงทุนแบบซ่อนได้ (Accordion) -->
+            <div class="mt-4 bg-slate-800/80 border border-slate-700 rounded-lg text-sm shadow-inner shrink-0 overflow-hidden">
+                <button id="summaryToggleBtn" class="w-full p-3 flex justify-between items-center text-emerald-400 font-semibold hover:bg-slate-700/50 transition-colors focus:outline-none">
+                    <span class="flex items-center gap-2"><i data-lucide="calculator" class="w-4 h-4"></i> ดูสรุปเงินลงทุนที่ต้องใช้</span>
+                    <i data-lucide="chevron-down" id="summaryToggleIcon" class="w-4 h-4 transition-transform duration-300"></i>
+                </button>
+                <div id="summaryContent" class="summary-content collapsed p-4 pt-1 space-y-3 bg-slate-900/50">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">จำนวนไม้ทั้งหมด:</span>
+                        <span id="infoTotalGrids" class="text-white font-bold">0 ไม้</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">เงินวางหลักประกัน:</span>
+                        <span id="infoTotalMargin" class="text-slate-200 font-mono">฿0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-xs sm:text-sm">ถือสถานะทั้งหมดในกรอบ:</span>
+                        <span id="infoMaxFloatingLoss" class="text-slate-200 font-mono">฿0</span>
+                    </div>
+                    <div class="pt-3 border-t border-slate-700 flex justify-between items-center">
+                        <span class="text-slate-300 font-semibold">รวมเงินที่ต้องการ:</span>
+                        <span id="infoReqCapital" class="text-amber-400 font-bold text-lg">฿0</span>
+                    </div>
                 </div>
             </div>
 
@@ -210,7 +229,7 @@
 
     <!-- Main Content: Dashboard -->
     <div id="main-content" class="flex-1 p-4 md:p-8 w-full relative md:h-screen md:overflow-y-auto">
-        <div id="loadingOverlay" class="loading-overlay rounded-xl">
+        <div id="loadingOverlay" class="loading-overlay rounded-xl flex">
             <i data-lucide="loader-2" class="w-12 h-12 animate-spin mb-4 text-emerald-500"></i>
             <h2 id="loadingText" class="text-xl font-bold text-center text-emerald-400">กำลังเตรียมการประมวลผล...</h2>
             <div class="w-64 h-2 bg-slate-800 rounded-full mt-4 overflow-hidden">
@@ -353,6 +372,7 @@
         lucide.createIcons();
         const CHART_POINT_LIMIT = 1500; 
         
+        // ข้อมูล URL (ALL)
         const _ds_map = {
             'set50': 'aHR0cHM6Ly93d3cuZHJvcGJveC5jb20vc2NsL2ZpL3FydjJyMzY0eDhscnQ5OWs1N2x1Yy9TNTAxXzFtX0FMTC5jc3Y/cmxrZXk9ZGIwZ3dtNjY4bTF5eTF4cXBvbHp5ZGpoZyZzdD05Zm05ZWx0ZyZkbD0x',
             'usd': 'aHR0cHM6Ly93d3cuZHJvcGJveC5jb20vc2NsL2ZpL283MzF6NGg2bmhlNmg3NHhobjR1Ny9VU0RfVGZleGZmLmNzdj9ybGtleT1wYXI5YmJhN2N0azRuNHlydzFjbmh6a2N6JnN0PWxreHF1Y252JmRsPTE='
@@ -364,8 +384,8 @@
         let calcTimeout = null;
 
         let params = {
-            capital: 1000000, upperLimit: 1050, lowerLimit: 750,
-            gridSpacing: 10, contractsPerGrid: 1, commission: 20, margin: 10000, multiplier: 200
+            capital: 200000, upperLimit: 1050, lowerLimit: 750,
+            gridSpacing: 3, contractsPerGrid: 1, commission: 18, margin: 10000, multiplier: 200
         };
 
         function getArrayMax(arr) {
@@ -399,8 +419,16 @@
             return reduced;
         }
 
+        // แปลง YYYY-MM-DD เป็น DD/MM/YY สำหรับแสดงในวงเล็บ (Last)
+        function formatToDDMMYY(isoStr) {
+            const parts = isoStr.split('-');
+            if(parts.length !== 3) return isoStr;
+            return `${parts[2]}/${parts[1]}/${parts[0].substring(2)}`;
+        }
+
         const yieldToMain = () => new Promise(resolve => setTimeout(resolve, 0));
 
+        // UI Controls
         const sidebar = document.getElementById('sidebar');
         const resizer = document.getElementById('resizer');
         let isResizing = false;
@@ -410,7 +438,6 @@
             document.body.style.cursor = 'col-resize';
             document.body.style.userSelect = 'none'; 
         });
-
         window.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
             let newWidth = e.clientX;
@@ -418,7 +445,6 @@
             if (newWidth > window.innerWidth * 0.6) newWidth = window.innerWidth * 0.6; 
             sidebar.style.width = newWidth + 'px';
         });
-
         window.addEventListener('mouseup', () => {
             if (isResizing) {
                 isResizing = false;
@@ -426,11 +452,19 @@
                 document.body.style.userSelect = '';
             }
         });
-
         window.addEventListener('resize', () => {
             if (window.innerWidth < 768) {
                 sidebar.style.width = ''; 
             }
+        });
+
+        // Accordion Summary Toggle
+        const summaryToggleBtn = document.getElementById('summaryToggleBtn');
+        const summaryContent = document.getElementById('summaryContent');
+        const summaryToggleIcon = document.getElementById('summaryToggleIcon');
+        summaryToggleBtn.addEventListener('click', () => {
+            summaryContent.classList.toggle('collapsed');
+            summaryToggleIcon.classList.toggle('rotate-180');
         });
 
         document.getElementById('exportCsvBtn').addEventListener('click', () => {
@@ -465,13 +499,10 @@
 
         const els = {
             dataSourceSelect: document.getElementById('dataSourceSelect'), 
-            loadDataBtn: document.getElementById('loadDataBtn'),
-            clearDataBtn: document.getElementById('clearDataBtn'), uploadSection: document.getElementById('uploadSection'),
-            cachedSection: document.getElementById('cachedSection'), dataStatus: document.getElementById('dataStatus'),
+            dataStatus: document.getElementById('dataStatus'),
             settingsPanel: document.getElementById('settingsPanel'), loadingOverlay: document.getElementById('loadingOverlay'),
             loadingText: document.getElementById('loadingText'), loadingSubtext: document.getElementById('loadingSubtext'), 
             progressBar: document.getElementById('progressBar'),
-            localFileInput: document.getElementById('localFileInput'),
             inputs: {
                 startDate: document.getElementById('startDate'), endDate: document.getElementById('endDate'),
                 capital: document.getElementById('capital'), upperLimit: document.getElementById('upperLimit'),
@@ -482,10 +513,7 @@
                 margin: document.getElementById('margin'),
                 multiplier: document.getElementById('multiplier')
             },
-            labels: {
-                upper: document.getElementById('labelUpper'),
-                lower: document.getElementById('labelLower')
-            },
+            labels: { upper: document.getElementById('labelUpper'), lower: document.getElementById('labelLower') },
             info: {
                 totalGrids: document.getElementById('infoTotalGrids'),
                 totalMargin: document.getElementById('infoTotalMargin'),
@@ -522,6 +550,7 @@
             els.progressBar.style.width = `${percent}%`;
         };
 
+        // Tooltip logic
         let tooltipRAF = null;
         els.interactiveCharts.forEach(container => {
             container.addEventListener('mousemove', (e) => {
@@ -571,25 +600,55 @@
             });
         });
 
-        async function initApp() {
-            els.dataStatus.innerHTML = `<span class="text-amber-400 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> โปรดโหลดข้อมูลจาก Cloud หรืออัปโหลดไฟล์ </span>`;
-            lucide.createIcons();
-        }
-
+        // ฟังก์ชันตั้งค่าวันที่เริ่มต้น ให้ดึง 2 วันล่าสุดของข้อมูล
         function setupDateInputs() {
             if (masterData.length === 0) return;
-            const minD = masterData[0].iso; const maxD = masterData[masterData.length - 1].iso;
-            els.inputs.startDate.min = minD; els.inputs.startDate.max = maxD;
-            els.inputs.endDate.min = minD; els.inputs.endDate.max = maxD;
+            
+            const uniqueDates = [...new Set(masterData.map(d => d.iso))];
+            if(uniqueDates.length === 0) return;
+
+            const maxD = uniqueDates[uniqueDates.length - 1]; 
+            const minD = uniqueDates.length > 1 ? uniqueDates[uniqueDates.length - 2] : uniqueDates[0]; 
+
+            els.inputs.startDate.min = uniqueDates[0]; 
+            els.inputs.startDate.max = maxD;
+            els.inputs.endDate.min = uniqueDates[0]; 
+            els.inputs.endDate.max = maxD;
+            
             els.inputs.startDate.value = minD; 
             els.inputs.endDate.value = maxD;
         }
 
-        els.clearDataBtn.addEventListener('click', () => {
-            els.clearDataBtn.innerText = "กำลังล้าง...";
-            location.reload();
+        // Helper Get Value from Input stripping commas
+        const getNum = (el) => parseFloat(el.value.replace(/,/g, '')) || 0;
+
+        // Auto Comma Formatter for text inputs
+        ['capital', 'upperLimit', 'lowerLimit', 'contractsPerGrid', 'commission', 'multiplier', 'margin'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('input', function() {
+                let val = this.value.replace(/[^0-9.]/g, '');
+                if ((val.match(/\./g) || []).length > 1) {
+                    val = val.replace(/\.+$/, '');
+                }
+                
+                let parts = val.split('.');
+                if(parts[0]) {
+                    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                }
+                this.value = parts.join('.');
+                
+                if (['capital', 'contractsPerGrid', 'commission', 'multiplier', 'margin'].includes(id)) {
+                    updateGridInfo();
+                    triggerAutoCalc(false);
+                } else if (id === 'upperLimit' || id === 'lowerLimit') {
+                    updateGridInfo();
+                    triggerAutoCalc(false);
+                }
+            });
         });
 
+        // ระบบจับคู่วันที่อัจฉริยะ 
         async function processCSVText(csvText) {
             updateLoading("กำลังเตรียมอ่านไฟล์ (Parsing)...", 10);
             await yieldToMain();
@@ -622,9 +681,6 @@
                     timeRaw = h.padStart(2, '0') + ':' + m.padStart(2, '0');
                 }
 
-                // ==========================================
-                // UNIVERSAL DATE PARSER (ป้องกันวันที่เรียงผิด)
-                // ==========================================
                 let yyyy, mm, dd;
                 let sep = dateRaw.includes('/') ? '/' : (dateRaw.includes('-') ? '-' : (dateRaw.includes('.') ? '.' : ''));
                 
@@ -637,18 +693,17 @@
                             yyyy = p[2];
                             if (parseInt(p[0]) > 12) { dd = p[0]; mm = p[1]; }
                             else if (parseInt(p[1]) > 12) { mm = p[0]; dd = p[1]; }
-                            else { dd = p[0]; mm = p[1]; } // Default assumption is DD/MM/YYYY
+                            else { dd = p[0]; mm = p[1]; } 
                         }
                     }
-                } else if (dateRaw.length === 8 && !isNaN(dateRaw)) { // Format: YYYYMMDD
+                } else if (dateRaw.length === 8 && !isNaN(dateRaw)) { 
                     yyyy = dateRaw.substring(0,4); mm = dateRaw.substring(4,6); dd = dateRaw.substring(6,8);
                 }
 
-                // ตรวจสอบและบันทึก
                 if (yyyy && mm && dd) {
                     parsed.push({
                         iso: `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`,
-                        time: `${dateRaw} ${timeRaw}`,
+                        time: `${dd.padStart(2, '0')}/${mm.padStart(2, '0')}/${yyyy} ${timeRaw}`, // บังคับเป็น DD/MM/YYYY ให้ Tooltip
                         open: openPrice,
                         high: highPrice,
                         low: lowPrice,
@@ -658,8 +713,7 @@
             }
 
             if (parsed.length > 0) {
-                updateLoading("จัดเรียงเสร็จสิ้น กำลังเตรียมข้อมูล...", 80);
-                els.loadingSubtext.innerText = "กำลังนำข้อมูลเข้าระบบ...";
+                updateLoading("กำลังประมวลผลข้อมูล (ไม่เซฟลงเครื่อง)...", 80);
                 await yieldToMain();
                 
                 masterData = parsed.sort((a, b) => {
@@ -668,10 +722,15 @@
                     return timeA.localeCompare(timeB);
                 });
 
-                els.uploadSection.classList.add('hidden'); 
-                els.cachedSection.classList.remove('hidden');
+                // อัปเดตข้อความใน Dropdown (Last DD/MM/YY)
+                const latestIso = masterData[masterData.length - 1].iso;
+                const formattedLatest = formatToDDMMYY(latestIso);
+                const val = els.dataSourceSelect.value;
+                const opt = els.dataSourceSelect.querySelector(`option[value="${val}"]`);
+                const baseName = val === 'set50' ? '1. SET50' : '2. USD';
+                if(opt) opt.text = `${baseName} (Last ${formattedLatest})`;
+
                 setupDateInputs(); 
-                els.settingsPanel.classList.remove('opacity-50', 'pointer-events-none');
                 els.dataStatus.innerHTML = `<span class="text-emerald-400 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> โหลดข้อมูลสำเร็จ จำนวน ${masterData.length.toLocaleString()} ข้อมูล</span>`;
                 lucide.createIcons();
                 triggerAutoCalc(true); 
@@ -681,14 +740,14 @@
             }
         }
 
-        els.loadDataBtn.addEventListener('click', async () => {
-            const sourceKey = els.dataSourceSelect.value;
+        // ดึงข้อมูลผ่าน URL
+        async function fetchFromCloud(sourceKey) {
             const encodedUrl = _ds_map[sourceKey];
             if (!encodedUrl) return;
             const url = atob(encodedUrl);
             
             updateLoading("กำลังดาวน์โหลดไฟล์จาก Cloud...", 5);
-            els.loadingSubtext.innerText = "อาจใช้เวลา 2-10 วินาที ขึ้นอยู่กับขนาดไฟล์และความเร็วอินเทอร์เน็ต (ข้อมูลขนาดใหญ่อาจถึง 500k แถว)";
+            els.loadingSubtext.innerText = "ดึงข้อมูลสดใหม่ ไม่มีการเก็บบันทึก";
             els.loadingOverlay.style.display = 'flex';
             
             try {
@@ -711,34 +770,40 @@
                 alert("ไม่สามารถดาวน์โหลดไฟล์ได้ โปรดตรวจสอบอินเทอร์เน็ต");
                 els.loadingOverlay.style.display = 'none';
             }
+        }
+
+        // เปิดมาดึงอัตโนมัติเลย
+        window.addEventListener('DOMContentLoaded', async () => {
+            await fetchFromCloud(els.dataSourceSelect.value);
         });
 
-        els.localFileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            updateLoading("กำลังอ่านไฟล์จากเครื่อง...", 5);
-            els.loadingSubtext.innerText = "โปรดรอสักครู่ ระบบกำลังอ่านข้อมูลไฟล์ของคุณ...";
-            els.loadingOverlay.style.display = 'flex';
-
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                const csvText = event.target.result;
-                await processCSVText(csvText);
-            };
-            reader.onerror = () => {
-                alert("เกิดข้อผิดพลาดในการอ่านไฟล์");
-                els.loadingOverlay.style.display = 'none';
-            };
-            reader.readAsText(file);
-            e.target.value = '';
+        // Dropdown เปลี่ยน ➔ โหลดใหม่ทันที
+        els.dataSourceSelect.addEventListener('change', async (e) => {
+            const val = e.target.value;
+            masterData = []; // ล้างแรมข้อมูลเก่า
+            
+            if (val === 'usd') {
+                els.inputs.gridSpacing.value = 0.1;
+                els.inputs.gridSpacingRange.value = 0.1;
+                els.inputs.multiplier.value = "1,000";
+                els.inputs.margin.value = "1,000";
+                els.inputs.commission.value = "5";
+            } else {
+                els.inputs.gridSpacing.value = 3;
+                els.inputs.gridSpacingRange.value = 3;
+                els.inputs.multiplier.value = "200";
+                els.inputs.margin.value = "10,000";
+                els.inputs.commission.value = "18"; 
+            }
+            updateGridInfo();
+            await fetchFromCloud(val);
         });
 
         const triggerAutoCalc = (autoCalcBounds = false) => {
             clearTimeout(calcTimeout);
             els.loadingOverlay.style.display = 'flex';
             updateLoading("กำลังเตรียมการประมวลผล...", 0);
-            els.loadingSubtext.innerText = "รอคำสั่ง... (ระบบจะหน่วงเวลาเล็กน้อยเพื่อป้องกันการพิมพ์รัวๆ)";
+            els.loadingSubtext.innerText = "รอคำสั่ง...";
             
             calcTimeout = setTimeout(async () => {
                 await yieldToMain(); 
@@ -746,30 +811,49 @@
             }, 600); 
         };
 
-        els.dataSourceSelect.addEventListener('change', (e) => {
-            const val = e.target.value;
-            if (val === 'usd') {
-                els.inputs.gridSpacing.value = 0.1;
-                els.inputs.gridSpacingRange.value = 0.1;
-                els.inputs.multiplier.value = 1000;
-                els.inputs.margin.value = 1000;
-                els.inputs.commission.value = 5;
-            } else {
-                els.inputs.gridSpacing.value = 10;
-                els.inputs.gridSpacingRange.value = 10;
-                els.inputs.multiplier.value = 200;
-                els.inputs.margin.value = 10000;
-                els.inputs.commission.value = 20;
-            }
+        // Date adjustment logic สำหรับปุ่ม 1 วัน, 1 เดือน, 1 ปี
+        const adjustStartDate = (years, months, days) => {
+            if (masterData.length === 0) return;
+            const endDateVal = els.inputs.endDate.value;
+            if (!endDateVal) return;
+            
+            const endD = new Date(endDateVal);
+            endD.setFullYear(endD.getFullYear() - years);
+            endD.setMonth(endD.getMonth() - months);
+            endD.setDate(endD.getDate() - days);
+            
+            const yyyy = endD.getFullYear();
+            const mm = String(endD.getMonth() + 1).padStart(2, '0');
+            const dd = String(endD.getDate()).padStart(2, '0');
+            let targetIso = `${yyyy}-${mm}-${dd}`;
+            
+            const minAllowed = masterData[0].iso;
+            if (targetIso < minAllowed) targetIso = minAllowed;
+            
+            els.inputs.startDate.value = targetIso;
+            triggerAutoCalc(true);
+        };
+
+        document.getElementById('btn1Day').addEventListener('click', () => adjustStartDate(0, 0, 1));
+        document.getElementById('btn1Month').addEventListener('click', () => adjustStartDate(0, 1, 0));
+        document.getElementById('btn1Year').addEventListener('click', () => adjustStartDate(1, 0, 0));
+
+        // ปุ่ม Grid Shortcuts
+        const setGridSpacing = (val) => {
+            els.inputs.gridSpacing.value = val;
+            els.inputs.gridSpacingRange.value = val;
             updateGridInfo();
-        });
+            triggerAutoCalc(false);
+        };
+        document.getElementById('btnGrid1').addEventListener('click', () => setGridSpacing(1));
+        document.getElementById('btnGrid3').addEventListener('click', () => setGridSpacing(3));
+        document.getElementById('btnGrid5').addEventListener('click', () => setGridSpacing(5));
 
         els.inputs.startDate.addEventListener('change', () => triggerAutoCalc(true));
         els.inputs.endDate.addEventListener('change', () => triggerAutoCalc(true));
 
-        Object.keys(els.inputs).forEach(key => {
-            if (key === 'startDate' || key === 'endDate') return; 
-            els.inputs[key].addEventListener('input', (e) => {
+        ['gridSpacing', 'gridSpacingRange'].forEach(id => {
+            document.getElementById(id).addEventListener('input', (e) => {
                 if (e.target.id === 'gridSpacingRange') els.inputs.gridSpacing.value = e.target.value;
                 if (e.target.id === 'gridSpacing') els.inputs.gridSpacingRange.value = e.target.value;
                 updateGridInfo(); 
@@ -778,12 +862,12 @@
         });
 
         function updateGridInfo() {
-            const up = Math.max(parseFloat(els.inputs.upperLimit.value) || 0, parseFloat(els.inputs.lowerLimit.value) || 0);
-            const lo = Math.min(parseFloat(els.inputs.upperLimit.value) || 0, parseFloat(els.inputs.lowerLimit.value) || 0);
+            const up = Math.max(getNum(els.inputs.upperLimit), getNum(els.inputs.lowerLimit));
+            const lo = Math.min(getNum(els.inputs.upperLimit), getNum(els.inputs.lowerLimit));
             const sp = Math.abs(parseFloat(els.inputs.gridSpacing.value)) || 1;
-            const qty = parseFloat(els.inputs.contractsPerGrid.value) || 1;
-            const margin = parseFloat(els.inputs.margin.value) || 0;
-            const multiplier = parseFloat(els.inputs.multiplier.value) || 0;
+            const qty = getNum(els.inputs.contractsPerGrid);
+            const margin = getNum(els.inputs.margin);
+            const multiplier = getNum(els.inputs.multiplier);
 
             if (sp <= 0 || up <= lo) {
                 els.info.totalGrids.innerText = "0 ไม้";
@@ -798,7 +882,7 @@
             const maxFloatingLoss = sp * ((numGrids - 1) * numGrids / 2) * multiplier * qty;
             const reqCap = totalMargin + maxFloatingLoss;
             
-            els.info.totalGrids.innerText = `${numGrids.toLocaleString()} ไม้`;
+            els.info.totalGrids.innerText = `${numGrids.toLocaleString('en-US')} ไม้`;
             els.info.totalMargin.innerText = `฿${totalMargin.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
             els.info.maxFloatingLoss.innerText = `฿${maxFloatingLoss.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
             els.info.reqCapital.innerText = `฿${reqCap.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
@@ -839,31 +923,28 @@
                     if(activeData[i].high > maxHigh) maxHigh = activeData[i].high;
                     if(activeData[i].low < minLow) minLow = activeData[i].low;
                 }
-                
-                if (els.labels.upper) els.labels.upper.innerText = `ขอบบน (Max: ${maxHigh})`;
-                if (els.labels.lower) els.labels.lower.innerText = `ขอบล่าง (Min: ${minLow})`;
 
                 if (autoCalcBounds) {
                     const sp = Math.abs(parseFloat(els.inputs.gridSpacing.value)) || 1;
                     const suggestedUpper = Math.ceil(maxHigh / sp) * sp;
                     const suggestedLower = Math.floor(minLow / sp) * sp;
                     
-                    els.inputs.upperLimit.value = Math.round(suggestedUpper * 10000) / 10000;
-                    els.inputs.lowerLimit.value = Math.round(suggestedLower * 10000) / 10000;
+                    els.inputs.upperLimit.value = (Math.round(suggestedUpper * 10000) / 10000).toLocaleString('en-US');
+                    els.inputs.lowerLimit.value = (Math.round(suggestedLower * 10000) / 10000).toLocaleString('en-US');
                 }
                 updateGridInfo(); 
                 
-                els.dataStatus.innerHTML = `<span class="text-emerald-400">จำนวนข้อมูลที่ทดสอบ: ${activeData.length.toLocaleString()} แท่ง</span>`;
+                els.dataStatus.innerHTML = `<span class="text-emerald-400 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> จำนวนข้อมูลที่ทดสอบ: ${activeData.length.toLocaleString('en-US')} แท่ง</span>`;
                 lucide.createIcons();
 
-                params.capital = parseFloat(els.inputs.capital.value) || 0;
-                params.upperLimit = parseFloat(els.inputs.upperLimit.value) || 0;
-                params.lowerLimit = parseFloat(els.inputs.lowerLimit.value) || 0;
+                params.capital = getNum(els.inputs.capital);
+                params.upperLimit = getNum(els.inputs.upperLimit);
+                params.lowerLimit = getNum(els.inputs.lowerLimit);
                 params.gridSpacing = parseFloat(els.inputs.gridSpacing.value) || 1;
-                params.contractsPerGrid = parseFloat(els.inputs.contractsPerGrid.value) || 1;
-                params.commission = parseFloat(els.inputs.commission.value) || 0;
-                params.margin = parseFloat(els.inputs.margin.value) || 0;
-                params.multiplier = parseFloat(els.inputs.multiplier.value) || 0;
+                params.contractsPerGrid = getNum(els.inputs.contractsPerGrid);
+                params.commission = getNum(els.inputs.commission);
+                params.margin = getNum(els.inputs.margin);
+                params.multiplier = getNum(els.inputs.multiplier);
                 
                 if (params.lowerLimit >= params.upperLimit) {
                     els.loadingOverlay.style.display = 'none';
@@ -979,7 +1060,7 @@
                 let lastYieldTime = performance.now();
                 for (let i = 0; i < len; i++) {
                     if (i % 5000 === 0 && performance.now() - lastYieldTime > 30) {
-                        updateLoading(`กำลังวิ่ง Backtest... ${i.toLocaleString()} แท่ง`, 10 + (i/len * 85));
+                        updateLoading(`กำลังวิ่ง Backtest... ${i.toLocaleString('en-US')} แท่ง`, 10 + (i/len * 85));
                         await yieldToMain();
                         lastYieldTime = performance.now();
                     }
@@ -1032,14 +1113,14 @@
                 els.stats.active.innerText = curve.pos[len-1];
                 
                 let maxPosInt = 0; for(let i=0; i<len; i++) if(curve.pos[i] > maxPosInt) maxPosInt = curve.pos[i];
-                els.stats.maxPos.innerText = maxPosInt.toLocaleString();
+                els.stats.maxPos.innerText = maxPosInt.toLocaleString('en-US');
                 
                 const finalUnrl = curve.totalPnl[len-1] - realizedPNL;
                 els.stats.unrealized.innerText = `${finalUnrl >= 0 ? '+' : ''}฿${fmtPnl(finalUnrl)}`;
                 els.stats.unrealized.className = `font-mono text-xs ${finalUnrl < 0 ? 'text-red-400' : 'text-emerald-400'}`;
                 
                 els.stats.drawdown.innerText = `${fmtPrice(maxDrawdown)}%`; 
-                els.stats.trades.innerText = totalTrades.toLocaleString();
+                els.stats.trades.innerText = totalTrades.toLocaleString('en-US');
 
                 simResultsData = {
                     open: curve.open, close: curve.close, time: curve.time,
@@ -1127,14 +1208,13 @@
             els.charts.priceLine.setAttribute('points', mapDataToSVG(marketCurve, w, prH, priceMin, priceMax));
             els.charts.gridLinesGroup.innerHTML = '';
             
-            // ล็อกขีดจำกัดป้องกันเบราว์เซอร์ล่ม หากผู้ใช้อาจเผลอตั้งกริดแคบมากเกินไป
             let lineCount = 0;
             const maxAllowedSvgLines = 500; 
 
             for (let p = lowerLimit; p <= upperLimit; p += gridSpacing) {
                 if (p < priceMin || p > priceMax) continue;
                 
-                if (lineCount >= maxAllowedSvgLines) break; // ตัดจบทันทีเมื่อถึงขีดจำกัด
+                if (lineCount >= maxAllowedSvgLines) break; 
                 lineCount++;
 
                 const yPos = prH - ((p - priceMin) / (priceMax - priceMin || 1)) * prH;
@@ -1144,8 +1224,6 @@
             }
             els.charts.gridUpperLabel.innerText = `Upper: ${fmtPrice(upperLimit)}`; els.charts.gridLowerLabel.innerText = `Lower: ${fmtPrice(lowerLimit)}`;
         }
-
-        window.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
