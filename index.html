@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- ป้องกันการแคชหน้าเว็บ เพื่อบังคับให้ผู้ใช้โหลดเวอร์ชันล่าสุดเสมอ -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
     <title>TFEX Grid System Backtester</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -381,6 +387,12 @@
     </div>
 
     <script>
+        // ทำความสะอาดล้างฐานข้อมูลเดิมที่เคยเซฟไว้ในเครื่องผู้ใช้ (เวอร์ชันเก่า) ทันทีที่เปิดเว็บ
+        try {
+            window.indexedDB.deleteDatabase("TFEX_Database_V51");
+            window.indexedDB.deleteDatabase("DataStore");
+        } catch (e) {}
+
         lucide.createIcons();
         const CHART_POINT_LIMIT = 1500; 
         
@@ -803,7 +815,8 @@
                     }
                 } catch(e) {}
 
-                const response = await fetch(fetchUrl);
+                // เพิ่ม { cache: 'no-store' } เพื่อบังคับให้ดึงข้อมูลใหม่เสมอ ไม่ใช้ข้อมูลจาก Cache ในเครื่อง
+                const response = await fetch(fetchUrl, { cache: 'no-store' });
                 if (!response.ok) throw new Error("Network Error");
                 const csvText = await response.text();
                 
