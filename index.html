@@ -1,29 +1,37 @@
 ﻿<!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TFEX Grid System Backtester</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        .dark ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
         svg { display: block; width: 100%; height: 100%; overflow: visible; }
         .loading-overlay {
             display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(2, 6, 23, 0.95); z-index: 50;
-            justify-content: center; align-items: center; flex-direction: column;
-            color: #10b981;
+            z-index: 50; justify-content: center; align-items: center; flex-direction: column;
         }
         input[type="date"]::-webkit-calendar-picker-indicator {
-            filter: invert(0.6) sepia(1) saturate(3) hue-rotate(100deg);
             cursor: pointer;
             padding: 4px;
+        }
+        .dark input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.6) sepia(1) saturate(3) hue-rotate(100deg);
         }
         @media (max-width: 767px) {
             #main-content { scroll-margin-top: 20px; }
@@ -44,227 +52,231 @@
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-200 font-sans min-h-screen flex flex-col md:flex-row md:h-screen md:overflow-hidden">
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-sans min-h-screen flex flex-col md:flex-row md:h-screen md:overflow-hidden transition-colors duration-300">
 
     <!-- Tooltip Overlay -->
-    <div id="chartTooltip" class="hidden absolute z-[100] bg-slate-900/95 border border-slate-700 rounded-lg p-3 shadow-2xl pointer-events-none text-xs font-mono w-[220px] transition-opacity duration-75 backdrop-blur-sm">
-        <div class="text-slate-400 mb-1 border-b border-slate-700 pb-1" id="tt-date">DD/MM/YYYY 00:00</div>
+    <div id="chartTooltip" class="hidden absolute z-[100] bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 rounded-lg p-3 shadow-2xl pointer-events-none text-xs font-mono w-[220px] transition-opacity duration-75 backdrop-blur-sm">
+        <div class="text-slate-500 dark:text-slate-400 mb-1 border-b border-slate-200 dark:border-slate-700 pb-1" id="tt-date">DD/MM/YYYY 00:00</div>
         <div class="flex justify-between items-center py-0.5">
-            <span class="text-slate-400">Open:</span>
-            <span id="tt-open" class="text-slate-200">0.00</span>
+            <span class="text-slate-500 dark:text-slate-400">Open:</span>
+            <span id="tt-open" class="text-slate-800 dark:text-slate-200">0.00</span>
         </div>
         <div class="flex justify-between items-center py-0.5">
-            <span class="text-slate-400">Close:</span>
-            <span id="tt-close" class="text-blue-400 font-bold">0.00</span>
+            <span class="text-slate-500 dark:text-slate-400">Close:</span>
+            <span id="tt-close" class="text-blue-600 dark:text-blue-400 font-bold">0.00</span>
         </div>
-        <div class="flex justify-between items-center py-0.5 mt-1 border-t border-slate-800 pt-1">
-            <span class="text-slate-400">Equity:</span>
-            <span id="tt-eq" class="text-white font-bold">0</span>
+        <div class="flex justify-between items-center py-0.5 mt-1 border-t border-slate-200 dark:border-slate-800 pt-1">
+            <span class="text-slate-500 dark:text-slate-400">Equity:</span>
+            <span id="tt-eq" class="text-slate-900 dark:text-white font-bold">0</span>
         </div>
         <div class="flex justify-between items-center py-0.5">
-            <span class="text-slate-400">Net P/L:</span>
+            <span class="text-slate-500 dark:text-slate-400">Net P/L:</span>
             <span id="tt-pnl" class="font-bold">0</span>
         </div>
         <div class="flex justify-between items-center py-0.5">
-            <span class="text-slate-400">Drawdown:</span>
-            <span id="tt-dd" class="text-red-400 font-bold">0.00%</span>
+            <span class="text-slate-500 dark:text-slate-400">Drawdown:</span>
+            <span id="tt-dd" class="text-red-500 dark:text-red-400 font-bold">0.00%</span>
         </div>
         <div class="flex justify-between items-center py-0.5">
-            <span class="text-slate-400">ถือสัญญา:</span>
-            <span id="tt-pos" class="text-purple-400 font-bold">0</span>
+            <span class="text-slate-500 dark:text-slate-400">ถือสัญญา:</span>
+            <span id="tt-pos" class="text-purple-600 dark:text-purple-400 font-bold">0</span>
         </div>
     </div>
 
     <!-- Sidebar: Control Panel -->
-    <div id="sidebar" class="w-full md:w-[320px] bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 p-5 flex flex-col z-10 shrink-0 shadow-xl md:h-screen md:overflow-y-auto">
-        <div class="flex items-center gap-3 mb-5 text-emerald-400 shrink-0">
+    <div id="sidebar" class="w-full md:w-[320px] bg-white dark:bg-slate-900 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 p-5 flex flex-col z-10 shrink-0 shadow-xl md:h-screen md:overflow-y-auto transition-colors duration-300">
+        <div class="flex items-center gap-3 mb-5 text-emerald-600 dark:text-emerald-400 shrink-0">
             <i data-lucide="database" class="w-7 h-7"></i>
-            <h1 class="text-xl font-bold tracking-tight text-white">Grid Backtester</h1>
+            <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Grid Backtester</h1>
         </div>
 
-        <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-5 shrink-0">
+        <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 mb-5 shrink-0 transition-colors duration-300">
             <div id="uploadSection">
-                <label class="block text-sm font-medium text-slate-300 mb-2">ข้อมูลที่ทำการทดสอบ</label>
-                <select id="dataSourceSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-slate-200 mb-3 cursor-pointer">
+                <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">ข้อมูลที่ทำการทดสอบ</label>
+                <select id="dataSourceSelect" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-slate-800 dark:text-slate-200 mb-3 cursor-pointer">
                     <option value="set50">1. SET50 (ALL)</option>
 
                 </select>
             </div>
             
             <div id="cachedSection" class="hidden">
-                <div class="flex items-center gap-2 text-emerald-400 mb-2 font-medium text-sm">
+                <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 mb-2 font-medium text-sm">
                     <i data-lucide="check-circle" class="w-4 h-4"></i> มีข้อมูลในระบบพร้อมใช้
                 </div>
-                <button id="clearDataBtn" class="w-full bg-slate-700 hover:bg-red-600/80 text-white text-xs py-1.5 px-3 rounded transition-colors flex items-center justify-center gap-1">
+                <button id="clearDataBtn" class="w-full bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-red-600/80 text-slate-700 dark:text-white text-xs py-1.5 px-3 rounded transition-colors flex items-center justify-center gap-1">
                     <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh ข้อมูลใหม่
                 </button>
             </div>
 
-            <div id="dataStatus" class="text-xs text-slate-400 leading-relaxed mt-3 border-t border-slate-700 pt-2">
-                <span class="text-amber-400 flex items-center gap-1"><i data-lucide="loader" class="w-3 h-3 animate-spin"></i> กำลังโหลดข้อมูลอัตโนมัติ...</span>
+            <div id="dataStatus" class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mt-3 border-t border-slate-200 dark:border-slate-700 pt-2">
+                <span class="text-amber-500 dark:text-amber-400 flex items-center gap-1"><i data-lucide="loader" class="w-3 h-3 animate-spin"></i> กำลังโหลดข้อมูลอัตโนมัติ...</span>
             </div>
         </div>
 
         <div class="space-y-4 flex-1 pb-4" id="settingsPanel">
             
-            <div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800">
-                <label class="block text-xs font-semibold text-emerald-400 mb-2 uppercase tracking-wide">ช่วงเวลาทดสอบ (พิมพ์หรือเลือกปฏิทิน)</label>
+            <div class="bg-slate-50 dark:bg-slate-950/50 p-3 rounded-lg border border-slate-200 dark:border-slate-800 transition-colors duration-300">
+                <label class="block text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-2 uppercase tracking-wide">ช่วงเวลาทดสอบ (พิมพ์หรือเลือกปฏิทิน)</label>
                 <div class="grid grid-cols-2 gap-2 mb-3">
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1">เริ่มวันที่</label>
-                        <input type="date" id="startDate" class="w-full bg-slate-900 border border-slate-700 rounded py-1.5 px-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-300">
+                        <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">เริ่มวันที่</label>
+                        <input type="date" id="startDate" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded py-1.5 px-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-800 dark:text-slate-300">
                     </div>
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1">ถึงวันที่</label>
-                        <input type="date" id="endDate" class="w-full bg-slate-900 border border-slate-700 rounded py-1.5 px-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-300">
+                        <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">ถึงวันที่</label>
+                        <input type="date" id="endDate" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded py-1.5 px-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-800 dark:text-slate-300">
                     </div>
                 </div>
                 
-                <!-- ปุ่มด่วน 1 วัน, 1 เดือน, 1 ปี -->
                 <div class="flex gap-2">
-                    <button id="btn1Day" class="flex-1 bg-slate-800 hover:bg-slate-700 text-[10px] sm:text-xs text-slate-300 py-1.5 rounded border border-slate-700 transition-colors">1 วัน</button>
-                    <button id="btn1Month" class="flex-1 bg-slate-800 hover:bg-slate-700 text-[10px] sm:text-xs text-slate-300 py-1.5 rounded border border-slate-700 transition-colors">1 เดือน</button>
-                    <button id="btn1Year" class="flex-1 bg-slate-800 hover:bg-slate-700 text-[10px] sm:text-xs text-slate-300 py-1.5 rounded border border-slate-700 transition-colors">1 ปี</button>
+                    <button id="btn1Day" class="flex-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-[10px] sm:text-xs text-slate-600 dark:text-slate-300 py-1.5 rounded border border-slate-200 dark:border-slate-700 transition-colors">1 วัน</button>
+                    <button id="btn1Month" class="flex-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-[10px] sm:text-xs text-slate-600 dark:text-slate-300 py-1.5 rounded border border-slate-200 dark:border-slate-700 transition-colors">1 เดือน</button>
+                    <button id="btn1Year" class="flex-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-[10px] sm:text-xs text-slate-600 dark:text-slate-300 py-1.5 rounded border border-slate-200 dark:border-slate-700 transition-colors">1 ปี</button>
                 </div>
             </div>
 
-            <div class="border-t border-slate-800 pt-3">
-                <label class="block text-sm font-medium text-slate-400 mb-1">เงินลงทุนเริ่มต้น (บาท)</label>
+            <div class="border-t border-slate-200 dark:border-slate-800 pt-3">
+                <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">เงินลงทุนเริ่มต้น (บาท)</label>
                 <div>
-                    <input type="text" inputmode="decimal" id="capital" value="200,000" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono">
+                    <input type="text" inputmode="decimal" id="capital" value="200,000" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono text-slate-800 dark:text-slate-200 transition-colors">
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
-                <!-- สลับเอาขอบล่างขึ้นมาก่อน -->
                 <div>
-                    <label class="block text-sm font-medium text-slate-400 mb-1 flex justify-between items-center">
+                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 flex justify-between items-center">
                         <span id="labelLower">ขอบล่าง</span>
                         <i data-lucide="zap" class="w-3 h-3 text-emerald-500" title="อ้างอิงต่ำสุด"></i>
                     </label>
-                    <input type="text" inputmode="decimal" id="lowerLimit" value="750" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-red-400 font-bold font-mono">
+                    <input type="text" inputmode="decimal" id="lowerLimit" value="750" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-red-500 dark:text-red-400 font-bold font-mono transition-colors">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-400 mb-1 flex justify-between items-center">
+                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 flex justify-between items-center">
                         <span id="labelUpper">ขอบบน</span>
                         <i data-lucide="zap" class="w-3 h-3 text-emerald-500" title="อ้างอิงสูงสุด"></i>
                     </label>
-                    <input type="text" inputmode="decimal" id="upperLimit" value="1,050" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-emerald-400 font-bold font-mono">
+                    <input type="text" inputmode="decimal" id="upperLimit" value="1,050" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold font-mono transition-colors">
                 </div>
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-slate-400 mb-1">ช่วงห่างกริด (จุด)</label>
+                <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">ช่วงห่างกริด (จุด)</label>
                 <div class="flex items-center gap-3">
                     <input type="range" id="gridSpacingRange" min="0.1" max="20" step="0.1" value="3" class="w-full accent-emerald-500 cursor-pointer">
-                    <input type="number" id="gridSpacing" min="0.1" max="20" step="0.1" value="3" class="bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-sm focus:outline-none focus:border-emerald-500 w-20 text-center text-emerald-400 font-mono">
+                    <input type="number" id="gridSpacing" min="0.1" max="20" step="0.1" value="3" class="bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-1.5 px-2 text-sm focus:outline-none focus:border-emerald-500 w-20 text-center text-emerald-600 dark:text-emerald-400 font-mono transition-colors">
                 </div>
                 <div class="flex gap-2 mt-2">
-                    <button id="btnGrid1" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 py-1 rounded border border-slate-700 transition-colors">1 จุด</button>
-                    <button id="btnGrid3" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 py-1 rounded border border-slate-700 transition-colors">3 จุด</button>
-                    <button id="btnGrid5" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 py-1 rounded border border-slate-700 transition-colors">5 จุด</button>
+                    <button id="btnGrid1" class="flex-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 py-1 rounded border border-slate-200 dark:border-slate-700 transition-colors">1 จุด</button>
+                    <button id="btnGrid3" class="flex-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 py-1 rounded border border-slate-200 dark:border-slate-700 transition-colors">3 จุด</button>
+                    <button id="btnGrid5" class="flex-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 py-1 rounded border border-slate-200 dark:border-slate-700 transition-colors">5 จุด</button>
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-sm font-medium text-slate-400 mb-1">สัญญา/ไม้</label>
-                    <input type="text" inputmode="decimal" id="contractsPerGrid" value="1" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono">
+                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">สัญญา/ไม้</label>
+                    <input type="text" inputmode="decimal" id="contractsPerGrid" value="1" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono text-slate-800 dark:text-slate-200 transition-colors">
                 </div>
                 <div>
-                    <!-- ค่าคอมมิชชั่น 18 -->
-                    <label class="block text-sm font-medium text-slate-400 mb-1">ค่าคอมฯ/สัญญา</label>
-                    <input type="text" inputmode="decimal" id="commission" value="18" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono">
+                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">ค่าคอมฯ/สัญญา</label>
+                    <input type="text" inputmode="decimal" id="commission" value="18" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono text-slate-800 dark:text-slate-200 transition-colors">
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-sm font-medium text-slate-400 mb-1">กำไร/จุด (บาท)</label>
-                    <input type="text" inputmode="decimal" id="multiplier" value="200" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono">
+                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">กำไร/จุด (บาท)</label>
+                    <input type="text" inputmode="decimal" id="multiplier" value="200" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono text-slate-800 dark:text-slate-200 transition-colors">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-400 mb-1">หลักประกัน</label>
-                    <input type="text" inputmode="decimal" id="margin" value="10,000" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono">
+                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">หลักประกัน</label>
+                    <input type="text" inputmode="decimal" id="margin" value="10,000" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-emerald-500 font-mono text-slate-800 dark:text-slate-200 transition-colors">
                 </div>
             </div>
             
-            <!-- ส่วนแสดงผลเงินลงทุนแบบซ่อนได้ (Accordion) -->
-            <div class="mt-4 bg-slate-800/80 border border-slate-700 rounded-lg text-sm shadow-inner shrink-0 overflow-hidden">
-                <button id="summaryToggleBtn" class="w-full p-3 flex justify-between items-center text-emerald-400 font-semibold hover:bg-slate-700/50 transition-colors focus:outline-none">
+            <!-- ส่วนแสดงผลเงินลงทุนแบบซ่อนได้ -->
+            <div class="mt-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-sm shadow-inner shrink-0 overflow-hidden transition-colors duration-300">
+                <button id="summaryToggleBtn" class="w-full p-3 flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-semibold hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors focus:outline-none">
                     <span class="flex items-center gap-2"><i data-lucide="calculator" class="w-4 h-4"></i> ดูสรุปเงินลงทุนที่ต้องใช้</span>
                     <i data-lucide="chevron-down" id="summaryToggleIcon" class="w-4 h-4 transition-transform duration-300"></i>
                 </button>
-                <div id="summaryContent" class="summary-content collapsed p-4 pt-1 space-y-3 bg-slate-900/50">
+                <div id="summaryContent" class="summary-content collapsed p-4 pt-1 space-y-3 bg-white/50 dark:bg-slate-900/50">
                     <div class="flex justify-between items-center">
-                        <span class="text-slate-400">จำนวนไม้ทั้งหมด:</span>
-                        <span id="infoTotalGrids" class="text-white font-bold">0 ไม้</span>
+                        <span class="text-slate-600 dark:text-slate-400">จำนวนไม้ทั้งหมด:</span>
+                        <span id="infoTotalGrids" class="text-slate-900 dark:text-white font-bold">0 ไม้</span>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-slate-400">เงินวางหลักประกัน:</span>
-                        <span id="infoTotalMargin" class="text-slate-200 font-mono">฿0</span>
+                        <span class="text-slate-600 dark:text-slate-400">เงินวางหลักประกัน:</span>
+                        <span id="infoTotalMargin" class="text-slate-700 dark:text-slate-200 font-mono">฿0</span>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-slate-400 text-xs sm:text-sm">ถือสถานะทั้งหมดในกรอบ:</span>
-                        <span id="infoMaxFloatingLoss" class="text-slate-200 font-mono">฿0</span>
+                        <span class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm">ถือสถานะทั้งหมดในกรอบ:</span>
+                        <span id="infoMaxFloatingLoss" class="text-slate-700 dark:text-slate-200 font-mono">฿0</span>
                     </div>
-                    <div class="pt-3 border-t border-slate-700 flex justify-between items-center">
-                        <span class="text-slate-300 font-semibold">รวมเงินที่ต้องการ:</span>
-                        <span id="infoReqCapital" class="text-amber-400 font-bold text-lg">฿0</span>
+                    <div class="pt-3 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                        <span class="text-slate-700 dark:text-slate-300 font-semibold">รวมเงินที่ต้องการ:</span>
+                        <span id="infoReqCapital" class="text-amber-500 dark:text-amber-400 font-bold text-lg">฿0</span>
                     </div>
                 </div>
             </div>
 
-            <button onclick="document.getElementById('main-content').scrollIntoView({behavior: 'smooth'})" class="w-full mt-4 bg-slate-700 text-emerald-400 py-2 rounded-lg text-sm md:hidden flex items-center justify-center gap-2">
+            <button onclick="document.getElementById('main-content').scrollIntoView({behavior: 'smooth'})" class="w-full mt-4 bg-slate-200 dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 py-2 rounded-lg text-sm md:hidden flex items-center justify-center gap-2 transition-colors">
                 เลื่อนลงไปดูผลลัพธ์และกราฟ <i data-lucide="arrow-down" class="w-4 h-4"></i>
             </button>
         </div>
     </div>
 
     <!-- Draggable Resizer -->
-    <div id="resizer" class="hidden md:flex w-1.5 bg-slate-800 hover:bg-emerald-500 cursor-col-resize z-20 shrink-0 items-center justify-center transition-colors relative group">
+    <div id="resizer" class="hidden md:flex w-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-emerald-500 dark:hover:bg-emerald-500 cursor-col-resize z-20 shrink-0 items-center justify-center transition-colors relative group">
         <div class="absolute -left-2 -right-2 h-full cursor-col-resize z-30"></div>
-        <div class="w-0.5 h-10 bg-slate-500 group-hover:bg-white rounded transition-colors"></div>
+        <div class="w-0.5 h-10 bg-slate-400 dark:bg-slate-500 group-hover:bg-slate-600 dark:group-hover:bg-white rounded transition-colors"></div>
     </div>
 
     <!-- Main Content: Dashboard -->
     <div id="main-content" class="flex-1 p-4 md:p-8 w-full relative md:h-screen md:overflow-y-auto">
-        <div id="loadingOverlay" class="loading-overlay rounded-xl flex">
-            <i data-lucide="loader-2" class="w-12 h-12 animate-spin mb-4 text-emerald-500"></i>
-            <h2 id="loadingText" class="text-xl font-bold text-center text-emerald-400">กำลังเตรียมการประมวลผล...</h2>
-            <div class="w-64 h-2 bg-slate-800 rounded-full mt-4 overflow-hidden">
+        
+        <!-- Toggle Light/Dark Mode Button -->
+        <button id="themeToggleBtn" class="absolute top-4 right-4 md:top-6 md:right-6 z-50 p-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-sm" title="สลับโหมดสี">
+            <i data-lucide="sun" class="w-5 h-5 hidden dark:block text-amber-400"></i>
+            <i data-lucide="moon" class="w-5 h-5 block dark:hidden text-slate-600"></i>
+        </button>
+
+        <div id="loadingOverlay" class="loading-overlay rounded-xl flex bg-white/95 dark:bg-slate-950/95 transition-colors duration-300">
+            <i data-lucide="loader-2" class="w-12 h-12 animate-spin mb-4 text-emerald-600 dark:text-emerald-500"></i>
+            <h2 id="loadingText" class="text-xl font-bold text-center text-emerald-600 dark:text-emerald-400">กำลังเตรียมการประมวลผล...</h2>
+            <div class="w-64 h-2 bg-slate-200 dark:bg-slate-800 rounded-full mt-4 overflow-hidden">
                 <div id="progressBar" class="h-full bg-emerald-500 w-0 transition-all duration-75"></div>
             </div>
-            <p id="loadingSubtext" class="text-xs text-slate-400 mt-3 text-center">โปรดรอสักครู่ ระบบกำลังคำนวณข้อมูลขนาดใหญ่</p>
+            <p id="loadingSubtext" class="text-xs text-slate-500 dark:text-slate-400 mt-3 text-center">โปรดรอสักครู่ ระบบกำลังคำนวณข้อมูลขนาดใหญ่</p>
         </div>
 
         <!-- Stats Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 mt-2">
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-4 opacity-10"><i data-lucide="briefcase" class="w-12 h-12"></i></div>
-                <h3 class="font-medium text-sm text-slate-400 mb-2">มูลค่าพอร์ตสุทธิ (Net Equity)</h3>
-                <p id="statTotalEquity" class="text-2xl lg:text-3xl font-bold text-white">฿0.00</p>
-                <p id="statEquityPercent" class="text-sm mt-2">0.00% จากเงินต้น</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 mt-12 md:mt-2">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm dark:shadow-lg relative overflow-hidden transition-colors duration-300">
+                <div class="absolute top-0 right-0 p-4 opacity-10 text-slate-800 dark:text-white"><i data-lucide="briefcase" class="w-12 h-12"></i></div>
+                <h3 class="font-medium text-sm text-slate-500 dark:text-slate-400 mb-2">มูลค่าพอร์ตสุทธิ (Net Equity)</h3>
+                <p id="statTotalEquity" class="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white">฿0.00</p>
+                <p id="statEquityPercent" class="text-sm mt-2 text-slate-500">0.00% จากเงินต้น</p>
             </div>
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-4 opacity-10"><i data-lucide="trending-up" class="w-12 h-12"></i></div>
-                <h3 class="font-medium text-sm text-slate-400 mb-2">กำไรรับรู้แล้ว (Realized P/L)</h3>
-                <p id="statRealized" class="text-2xl lg:text-3xl font-bold text-emerald-400">+฿0.00</p>
-                <p class="text-xs mt-2 text-slate-500">หักค่าคอมฯ รวม: <span id="statTotalComm">฿0.00</span></p>
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm dark:shadow-lg relative overflow-hidden transition-colors duration-300">
+                <div class="absolute top-0 right-0 p-4 opacity-10 text-slate-800 dark:text-white"><i data-lucide="trending-up" class="w-12 h-12"></i></div>
+                <h3 class="font-medium text-sm text-slate-500 dark:text-slate-400 mb-2">กำไรรับรู้แล้ว (Realized P/L)</h3>
+                <p id="statRealized" class="text-2xl lg:text-3xl font-bold text-emerald-600 dark:text-emerald-400">+฿0.00</p>
+                <p class="text-xs mt-2 text-slate-500 dark:text-slate-500">หักค่าคอมฯ รวม: <span id="statTotalComm">฿0.00</span></p>
             </div>
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-4 opacity-10"><i data-lucide="layers" class="w-12 h-12"></i></div>
-                <h3 class="font-medium text-sm text-slate-400 mb-2">สถานะปัจจุบัน (Active)</h3>
-                <p class="text-2xl lg:text-3xl font-bold text-white"><span id="statActive">0</span> <span class="text-base font-normal text-slate-500">สัญญา</span></p>
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm dark:shadow-lg relative overflow-hidden transition-colors duration-300">
+                <div class="absolute top-0 right-0 p-4 opacity-10 text-slate-800 dark:text-white"><i data-lucide="layers" class="w-12 h-12"></i></div>
+                <h3 class="font-medium text-sm text-slate-500 dark:text-slate-400 mb-2">สถานะปัจจุบัน (Active)</h3>
+                <p class="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white"><span id="statActive">0</span> <span class="text-base font-normal text-slate-500">สัญญา</span></p>
                 <div class="mt-2 text-xs text-slate-500 flex flex-col gap-1">
-                    <div>ไม้เทรดรวม: <span id="statTrades" class="text-slate-300">0</span></div>
-                    <div>ถือสะสมสูงสุด: <span id="statMaxPos" class="text-slate-300">0</span></div>
+                    <div>ไม้เทรดรวม: <span id="statTrades" class="text-slate-700 dark:text-slate-300">0</span></div>
+                    <div>ถือสะสมสูงสุด: <span id="statMaxPos" class="text-slate-700 dark:text-slate-300">0</span></div>
                 </div>
             </div>
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-4 opacity-10"><i data-lucide="alert-triangle" class="w-12 h-12"></i></div>
-                <h3 class="font-medium text-sm text-slate-400 mb-2">ขาดทุนสูงสุด (Max Drawdown)</h3>
-                <p id="statDrawdown" class="text-2xl lg:text-3xl font-bold text-amber-400">0.00%</p>
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm dark:shadow-lg relative overflow-hidden transition-colors duration-300">
+                <div class="absolute top-0 right-0 p-4 opacity-10 text-slate-800 dark:text-white"><i data-lucide="alert-triangle" class="w-12 h-12"></i></div>
+                <h3 class="font-medium text-sm text-slate-500 dark:text-slate-400 mb-2">ขาดทุนสูงสุด (Max Drawdown)</h3>
+                <p id="statDrawdown" class="text-2xl lg:text-3xl font-bold text-amber-500 dark:text-amber-400">0.00%</p>
                 <p class="text-xs mt-2 text-slate-500">Unrealized: <span id="statUnrealized" class="font-mono text-xs">+฿0.00</span></p>
             </div>
         </div>
@@ -272,9 +284,9 @@
         <!-- Charts Section -->
         <div class="space-y-6 pb-10">
             <!-- 1. Equity Curve Chart -->
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
-                <h3 class="text-sm font-semibold text-white mb-3">การเติบโตของพอร์ต (Equity Curve)</h3>
-                <div class="w-full h-40 bg-slate-950 rounded border border-slate-800 relative interactive-chart cursor-crosshair">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm dark:shadow-lg transition-colors duration-300">
+                <h3 class="text-sm font-semibold text-slate-800 dark:text-white mb-3">การเติบโตของพอร์ต (Equity Curve)</h3>
+                <div class="w-full h-40 bg-slate-50 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800 relative interactive-chart cursor-crosshair transition-colors duration-300">
                     <svg preserveAspectRatio="none" viewBox="0 0 1000 160">
                         <defs>
                             <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
@@ -282,10 +294,10 @@
                                 <stop offset="100%" stop-color="#10b981" stop-opacity="0" />
                             </linearGradient>
                         </defs>
-                        <line id="equityCapitalLine" x1="0" y1="0" x2="100%" y2="0" stroke="#475569" stroke-dasharray="5,5" />
+                        <line id="equityCapitalLine" class="stroke-slate-300 dark:stroke-slate-600" x1="0" y1="0" x2="100%" y2="0" stroke-dasharray="5,5" />
                         <polygon id="equityArea" fill="url(#equityGradient)" />
                         <polyline id="equityLine" fill="none" stroke="#10b981" stroke-width="1.5" vector-effect="non-scaling-stroke" />
-                        <line class="crosshair-sync hidden" y1="0" y2="100%" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" vector-effect="non-scaling-stroke" />
+                        <line class="crosshair-sync hidden stroke-slate-400 dark:stroke-slate-600" y1="0" y2="100%" stroke-width="1" stroke-dasharray="3,3" vector-effect="non-scaling-stroke" />
                     </svg>
                     <div id="eqMaxLabel" class="absolute top-2 left-2 text-[10px] text-slate-500">฿0</div>
                     <div id="eqMinLabel" class="absolute bottom-2 left-2 text-[10px] text-slate-500">฿0</div>
@@ -293,74 +305,74 @@
             </div>
 
             <!-- 2. Positions & Drawdown Chart -->
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm dark:shadow-lg transition-colors duration-300">
                 <div class="flex flex-wrap items-center justify-between mb-3">
-                    <h3 class="text-sm font-semibold text-white">สถานะสะสม (Positions) และ Drawdown (%)</h3>
+                    <h3 class="text-sm font-semibold text-slate-800 dark:text-white">สถานะสะสม (Positions) และ Drawdown (%)</h3>
                     <div class="flex gap-4 text-[10px] md:text-xs">
-                        <span class="flex items-center gap-1"><div class="w-3 h-3 bg-purple-500/30 border border-purple-500"></div> สัญญาที่ถือครอง</span>
-                        <span class="flex items-center gap-1"><div class="w-3 h-0.5 bg-red-500"></div> Drawdown (%)</span>
+                        <span class="flex items-center gap-1 text-slate-600 dark:text-slate-300"><div class="w-3 h-3 bg-purple-500/30 border border-purple-500"></div> สัญญาที่ถือครอง</span>
+                        <span class="flex items-center gap-1 text-slate-600 dark:text-slate-300"><div class="w-3 h-0.5 bg-red-500"></div> Drawdown (%)</span>
                     </div>
                 </div>
-                <div class="w-full h-52 bg-slate-950 rounded border border-slate-800 relative overflow-hidden interactive-chart cursor-crosshair">
+                <div class="w-full h-52 bg-slate-50 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800 relative overflow-hidden interactive-chart cursor-crosshair transition-colors duration-300">
                     <svg preserveAspectRatio="none" viewBox="0 0 1000 208">
-                        <line id="ddZeroLine" x1="0" y1="0" x2="100%" y2="0" stroke="#475569" stroke-dasharray="4,4" />
+                        <line id="ddZeroLine" class="stroke-slate-300 dark:stroke-slate-600" x1="0" y1="0" x2="100%" y2="0" stroke-dasharray="4,4" />
                         <g transform="translate(0, 104)"><polygon id="posArea" fill="#a855f7" fill-opacity="0.2" stroke="#a855f7" stroke-width="1" vector-effect="non-scaling-stroke" /></g>
                         <polyline id="ddLine" fill="none" stroke="#ef4444" stroke-width="1.5" vector-effect="non-scaling-stroke" />
-                        <line class="crosshair-sync hidden" y1="0" y2="100%" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" vector-effect="non-scaling-stroke" />
+                        <line class="crosshair-sync hidden stroke-slate-400 dark:stroke-slate-600" y1="0" y2="100%" stroke-width="1" stroke-dasharray="3,3" vector-effect="non-scaling-stroke" />
                     </svg>
-                    <div class="absolute bottom-2 right-2 text-[10px] md:text-xs text-purple-400 font-mono text-right leading-tight" id="posLabels"></div>
+                    <div class="absolute bottom-2 right-2 text-[10px] md:text-xs text-purple-600 dark:text-purple-400 font-mono text-right leading-tight" id="posLabels"></div>
                     <div class="absolute top-2 left-2 text-[10px] md:text-xs text-slate-500 font-mono" id="ddZeroLabel">0.00%</div>
-                    <div class="absolute bottom-2 left-2 text-[10px] md:text-xs text-red-400 font-mono" id="ddMaxLabel"></div>
+                    <div class="absolute bottom-2 left-2 text-[10px] md:text-xs text-red-500 dark:text-red-400 font-mono" id="ddMaxLabel"></div>
                 </div>
             </div>
 
             <!-- 3. Asset Price & Grid Chart -->
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm dark:shadow-lg transition-colors duration-300">
                 <div class="flex flex-wrap items-center justify-between mb-3">
-                    <h3 class="text-sm font-semibold text-white">การเคลื่อนไหวราคา (Close) และเส้น Grid</h3>
+                    <h3 class="text-sm font-semibold text-slate-800 dark:text-white">การเคลื่อนไหวราคา (Close) และเส้น Grid</h3>
                     <div class="flex gap-4 text-[10px] md:text-xs">
-                        <span class="flex items-center gap-1"><div class="w-3 h-0.5 bg-blue-500"></div> ราคาปิด</span>
-                        <span class="flex items-center gap-1"><div class="w-3 h-0.5 bg-slate-700"></div> เส้น Grid</span>
+                        <span class="flex items-center gap-1 text-slate-600 dark:text-slate-300"><div class="w-3 h-0.5 bg-blue-500"></div> ราคาปิด</span>
+                        <span class="flex items-center gap-1 text-slate-600 dark:text-slate-300"><div class="w-3 h-0.5 bg-slate-300 dark:bg-slate-700"></div> เส้น Grid</span>
                     </div>
                 </div>
-                <div class="w-full h-48 bg-slate-950 rounded border border-slate-800 relative overflow-hidden interactive-chart cursor-crosshair">
+                <div class="w-full h-48 bg-slate-50 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800 relative overflow-hidden interactive-chart cursor-crosshair transition-colors duration-300">
                     <svg preserveAspectRatio="none" viewBox="0 0 1000 192">
                         <g id="gridLinesGroup"></g>
                         <polyline id="priceLine" fill="none" stroke="#3b82f6" stroke-width="1.5" vector-effect="non-scaling-stroke" />
-                        <line class="crosshair-sync hidden" y1="0" y2="100%" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" vector-effect="non-scaling-stroke" />
+                        <line class="crosshair-sync hidden stroke-slate-400 dark:stroke-slate-600" y1="0" y2="100%" stroke-width="1" stroke-dasharray="3,3" vector-effect="non-scaling-stroke" />
                     </svg>
-                    <div class="absolute right-2 top-2 text-[10px] text-slate-500 bg-slate-900/80 px-2 py-1 rounded border border-slate-800" id="gridUpperLabel"></div>
-                    <div class="absolute right-2 bottom-2 text-[10px] text-slate-500 bg-slate-900/80 px-2 py-1 rounded border border-slate-800" id="gridLowerLabel"></div>
+                    <div class="absolute right-2 top-2 text-[10px] text-slate-500 bg-white/80 dark:bg-slate-900/80 px-2 py-1 rounded border border-slate-200 dark:border-slate-800 transition-colors" id="gridUpperLabel"></div>
+                    <div class="absolute right-2 bottom-2 text-[10px] text-slate-500 bg-white/80 dark:bg-slate-900/80 px-2 py-1 rounded border border-slate-200 dark:border-slate-800 transition-colors" id="gridLowerLabel"></div>
                 </div>
             </div>
 
             <!-- 4. Trade History Table -->
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm dark:shadow-lg transition-colors duration-300">
                 <div class="flex flex-wrap items-center justify-between mb-3 gap-2">
-                    <h3 class="text-sm font-semibold text-white flex items-center gap-2">
-                        <i data-lucide="list" class="w-4 h-4 text-purple-400"></i> ประวัติรายการซื้อขาย
+                    <h3 class="text-sm font-semibold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i data-lucide="list" class="w-4 h-4 text-purple-500 dark:text-purple-400"></i> ประวัติรายการซื้อขาย
                     </h3>
                     <div class="flex items-center gap-2">
-                        <button id="exportCsvBtn" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded flex items-center gap-1 transition-colors shadow shadow-blue-900/20 cursor-pointer">
+                        <button id="exportCsvBtn" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded flex items-center gap-1 transition-colors shadow-sm cursor-pointer">
                             <i data-lucide="download" class="w-3 h-3"></i> Export ทั้งหมด (CSV)
                         </button>
-                        <span class="text-xs text-slate-400 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 hidden sm:inline-block">แสดงล่าสุด 200 รายการ (เรียงจากใหม่ ➔ เก่า)</span>
+                        <span class="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 hidden sm:inline-block transition-colors">แสดงล่าสุด 200 รายการ</span>
                     </div>
                 </div>
-                <div class="w-full max-h-80 overflow-y-auto bg-slate-950 rounded-lg border border-slate-800">
-                    <table class="w-full text-left text-xs text-slate-300 relative">
-                        <thead class="text-[10px] md:text-xs text-slate-400 uppercase bg-slate-900 sticky top-0 shadow-sm z-10">
+                <div class="w-full max-h-80 overflow-y-auto bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 transition-colors duration-300">
+                    <table class="w-full text-left text-xs text-slate-600 dark:text-slate-300 relative">
+                        <thead class="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-100 dark:bg-slate-900 sticky top-0 shadow-sm z-10 transition-colors">
                             <tr>
-                                <th class="px-3 py-3 border-b border-slate-800">วัน-เวลา</th>
-                                <th class="px-3 py-3 border-b border-slate-800">สถานะ</th>
-                                <th class="px-3 py-3 border-b border-slate-800 text-right">ราคา</th>
-                                <th class="px-3 py-3 border-b border-slate-800 text-right">สัญญา</th>
-                                <th class="px-3 py-3 border-b border-slate-800 text-right">ค่าคอมฯ</th>
-                                <th class="px-3 py-3 border-b border-slate-800 text-right">กำไร/ขาดทุน(สุทธิ)</th>
+                                <th class="px-3 py-3 border-b border-slate-200 dark:border-slate-800">วัน-เวลา</th>
+                                <th class="px-3 py-3 border-b border-slate-200 dark:border-slate-800">สถานะ</th>
+                                <th class="px-3 py-3 border-b border-slate-200 dark:border-slate-800 text-right">ราคา</th>
+                                <th class="px-3 py-3 border-b border-slate-200 dark:border-slate-800 text-right">สัญญา</th>
+                                <th class="px-3 py-3 border-b border-slate-200 dark:border-slate-800 text-right">ค่าคอมฯ</th>
+                                <th class="px-3 py-3 border-b border-slate-200 dark:border-slate-800 text-right">กำไร/ขาดทุน(สุทธิ)</th>
                             </tr>
                         </thead>
-                        <tbody id="tradeLogBody" class="divide-y divide-slate-800 font-mono text-[10px] md:text-xs">
-                            <tr><td colspan="6" class="px-3 py-8 text-center text-slate-600">ยังไม่มีรายการซื้อขาย</td></tr>
+                        <tbody id="tradeLogBody" class="divide-y divide-slate-200 dark:divide-slate-800 font-mono text-[10px] md:text-xs transition-colors">
+                            <tr><td colspan="6" class="px-3 py-8 text-center text-slate-400 dark:text-slate-600">ยังไม่มีรายการซื้อขาย</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -372,7 +384,6 @@
         lucide.createIcons();
         const CHART_POINT_LIMIT = 1500; 
         
-        // ข้อมูล URL (ALL)
         const _ds_map = {
             'set50': 'aHR0cHM6Ly93d3cuZHJvcGJveC5jb20vc2NsL2ZpL3FydjJyMzY0eDhscnQ5OWs1N2x1Yy9TNTAxXzFtX0FMTC5jc3Y/cmxrZXk9ZGIwZ3dtNjY4bTF5eTF4cXBvbHp5ZGpoZyZzdD05Zm05ZWx0ZyZkbD0x',
             'usd': 'aHR0cHM6Ly93d3cuZHJvcGJveC5jb20vc2NsL2ZpL283MzF6NGg2bmhlNmg3NHhobjR1Ny9VU0RfVGZleGZmLmNzdj9ybGtleT1wYXI5YmJhN2N0azRuNHlydzFjbmh6a2N6JnN0PWxreHF1Y252JmRsPTE='
@@ -382,6 +393,7 @@
         let simResultsData = null;
         let fullTradeLog = []; 
         let calcTimeout = null;
+        let lastChartParams = null;
 
         let params = {
             capital: 200000, upperLimit: 1050, lowerLimit: 750,
@@ -419,7 +431,6 @@
             return reduced;
         }
 
-        // แปลง YYYY-MM-DD เป็น DD/MM/YY สำหรับแสดงในวงเล็บ (Last)
         function formatToDDMMYY(isoStr) {
             const parts = isoStr.split('-');
             if(parts.length !== 3) return isoStr;
@@ -427,6 +438,25 @@
         }
 
         const yieldToMain = () => new Promise(resolve => setTimeout(resolve, 0));
+
+        // Theme Toggle Logic
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        themeToggleBtn.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            // Redraw charts to update dynamic grid colors if data exists
+            if (lastChartParams) {
+                drawCharts(
+                    lastChartParams.equityCurve, 
+                    lastChartParams.positionCurve, 
+                    lastChartParams.drawdownCurve, 
+                    lastChartParams.marketCurve, 
+                    lastChartParams.capital, 
+                    lastChartParams.upperLimit, 
+                    lastChartParams.lowerLimit, 
+                    lastChartParams.gridSpacing
+                );
+            }
+        });
 
         // UI Controls
         const sidebar = document.getElementById('sidebar');
@@ -573,7 +603,7 @@
                     
                     const pnl = simResultsData.totalPnl[idx];
                     els.ttPnl.innerText = (pnl >= 0 ? "+" : "") + "฿" + fmtPnl(pnl);
-                    els.ttPnl.className = pnl >= 0 ? "font-bold text-emerald-400" : "font-bold text-red-400";
+                    els.ttPnl.className = pnl >= 0 ? "font-bold text-emerald-600 dark:text-emerald-400" : "font-bold text-red-500 dark:text-red-400";
                     
                     els.ttDd.innerText = "-" + fmtPrice(simResultsData.drawdown[idx]) + "%";
                     els.ttPos.innerText = simResultsData.pos[idx];
@@ -731,7 +761,7 @@
                 if(opt) opt.text = `${baseName} (Last ${formattedLatest})`;
 
                 setupDateInputs(); 
-                els.dataStatus.innerHTML = `<span class="text-emerald-400 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> โหลดข้อมูลสำเร็จ จำนวน ${masterData.length.toLocaleString()} ข้อมูล</span>`;
+                els.dataStatus.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> โหลดข้อมูลสำเร็จ จำนวน ${masterData.length.toLocaleString()} ข้อมูล</span>`;
                 lucide.createIcons();
                 triggerAutoCalc(true); 
             } else {
@@ -934,7 +964,7 @@
                 }
                 updateGridInfo(); 
                 
-                els.dataStatus.innerHTML = `<span class="text-emerald-400 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> จำนวนข้อมูลที่ทดสอบ: ${activeData.length.toLocaleString('en-US')} แท่ง</span>`;
+                els.dataStatus.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> จำนวนข้อมูลที่ทดสอบ: ${activeData.length.toLocaleString('en-US')} แท่ง</span>`;
                 lucide.createIcons();
 
                 params.capital = getNum(els.inputs.capital);
@@ -1104,10 +1134,10 @@
                 els.stats.totalEquity.innerText = `฿${fmtPnl(curve.equity[len-1])}`;
                 const eqPercent = ((curve.equity[len-1] - capital) / capital) * 100;
                 els.stats.equityPercent.innerText = `${fmtPrice(eqPercent)}% จากเงินต้น`;
-                els.stats.equityPercent.className = `text-sm mt-2 ${eqPercent >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+                els.stats.equityPercent.className = `text-sm mt-2 ${eqPercent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`;
                 
                 els.stats.realized.innerText = `${realizedPNL >= 0 ? '+' : ''}฿${fmtPnl(realizedPNL)}`;
-                els.stats.realized.className = `text-2xl lg:text-3xl font-bold ${realizedPNL >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+                els.stats.realized.className = `text-2xl lg:text-3xl font-bold ${realizedPNL >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`;
                 
                 els.stats.totalComm.innerText = `฿${fmtPnl(totalCommissionAcc)}`;
                 els.stats.active.innerText = curve.pos[len-1];
@@ -1117,7 +1147,7 @@
                 
                 const finalUnrl = curve.totalPnl[len-1] - realizedPNL;
                 els.stats.unrealized.innerText = `${finalUnrl >= 0 ? '+' : ''}฿${fmtPnl(finalUnrl)}`;
-                els.stats.unrealized.className = `font-mono text-xs ${finalUnrl < 0 ? 'text-red-400' : 'text-emerald-400'}`;
+                els.stats.unrealized.className = `font-mono text-xs ${finalUnrl < 0 ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`;
                 
                 els.stats.drawdown.innerText = `${fmtPrice(maxDrawdown)}%`; 
                 els.stats.trades.innerText = totalTrades.toLocaleString('en-US');
@@ -1127,13 +1157,28 @@
                     equity: curve.equity, pos: curve.pos, drawdown: curve.drawdown, totalPnl: curve.totalPnl 
                 };
 
+                // Store latest params to allow redraw on theme switch
+                lastChartParams = {
+                    equityCurve: downsample(simResultsData.equity, CHART_POINT_LIMIT),
+                    positionCurve: downsample(simResultsData.pos, CHART_POINT_LIMIT),
+                    drawdownCurve: downsample(simResultsData.drawdown, CHART_POINT_LIMIT),
+                    marketCurve: downsample(simResultsData.close, CHART_POINT_LIMIT),
+                    capital: capital,
+                    upperLimit: upperLimit,
+                    lowerLimit: lowerLimit,
+                    gridSpacing: safeSpacing
+                };
+
                 renderTradeLog(fullTradeLog.slice(-200));
                 drawCharts(
-                    downsample(simResultsData.equity, CHART_POINT_LIMIT), 
-                    downsample(simResultsData.pos, CHART_POINT_LIMIT), 
-                    downsample(simResultsData.drawdown, CHART_POINT_LIMIT), 
-                    downsample(simResultsData.close, CHART_POINT_LIMIT), 
-                    capital, upperLimit, lowerLimit, safeSpacing
+                    lastChartParams.equityCurve, 
+                    lastChartParams.positionCurve, 
+                    lastChartParams.drawdownCurve, 
+                    lastChartParams.marketCurve, 
+                    lastChartParams.capital, 
+                    lastChartParams.upperLimit, 
+                    lastChartParams.lowerLimit, 
+                    lastChartParams.gridSpacing
                 );
                 
                 els.loadingOverlay.style.display = 'none';
@@ -1147,26 +1192,26 @@
 
         function renderTradeLog(tradeLog) {
             if (tradeLog.length === 0) {
-                els.tables.tradeLogBody.innerHTML = `<tr><td colspan="6" class="px-3 py-8 text-center text-slate-600">ยังไม่มีรายการซื้อขาย</td></tr>`;
+                els.tables.tradeLogBody.innerHTML = `<tr><td colspan="6" class="px-3 py-8 text-center text-slate-500 dark:text-slate-600">ยังไม่มีรายการซื้อขาย</td></tr>`;
                 return;
             }
             let html = '';
             tradeLog.reverse().forEach(t => {
                 let actionClass = '';
-                if (t.action && t.action.includes('BUY')) actionClass = 'text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded';
-                else if (t.action && t.action.includes('SELL')) actionClass = 'text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded';
-                else actionClass = 'text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded font-bold'; 
+                if (t.action && t.action.includes('BUY')) actionClass = 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-400/10 px-2 py-0.5 rounded';
+                else if (t.action && t.action.includes('SELL')) actionClass = 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-400/10 px-2 py-0.5 rounded';
+                else actionClass = 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-400/10 px-2 py-0.5 rounded font-bold'; 
                 
-                const pnlText = t.pnl !== null ? (t.pnl > 0 ? `<span class="text-emerald-400">+${fmtPnl(t.pnl)}</span>` : `<span class="text-red-400">${fmtPnl(t.pnl)}</span>`) : '<span class="text-slate-600">-</span>';
+                const pnlText = t.pnl !== null ? (t.pnl > 0 ? `<span class="text-emerald-600 dark:text-emerald-400">+${fmtPnl(t.pnl)}</span>` : `<span class="text-red-500 dark:text-red-400">${fmtPnl(t.pnl)}</span>`) : '<span class="text-slate-400 dark:text-slate-600">-</span>';
                 const contractText = t.contracts === '-' ? '-' : t.contracts;
                 const commText = t.comm === '-' ? '-' : fmtPnl(t.comm);
                 
-                html += `<tr class="hover:bg-slate-800/40 transition-colors">
-                    <td class="px-3 py-2 text-slate-400">${t.time}</td>
+                html += `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <td class="px-3 py-2 text-slate-500 dark:text-slate-400">${t.time}</td>
                     <td class="px-3 py-2"><span class="${actionClass} whitespace-nowrap">${t.action}</span></td>
-                    <td class="px-3 py-2 text-right text-slate-200">${fmtPrice(t.price)}</td>
-                    <td class="px-3 py-2 text-right text-slate-400">${contractText}</td>
-                    <td class="px-3 py-2 text-right text-amber-500/80">${commText}</td>
+                    <td class="px-3 py-2 text-right text-slate-800 dark:text-slate-200">${fmtPrice(t.price)}</td>
+                    <td class="px-3 py-2 text-right text-slate-600 dark:text-slate-400">${contractText}</td>
+                    <td class="px-3 py-2 text-right text-amber-500 dark:text-amber-500/80">${commText}</td>
                     <td class="px-3 py-2 text-right">${pnlText}</td>
                 </tr>`;
             });
@@ -1210,6 +1255,10 @@
             
             let lineCount = 0;
             const maxAllowedSvgLines = 500; 
+            
+            // เช็คว่าหน้าเว็บปัจจุบันเป็นโหมดมืดหรือสว่าง เพื่อวาดสีเส้นกริดให้เหมาะสม
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridStrokeColor = isDark ? '#1e293b' : '#e2e8f0';
 
             for (let p = lowerLimit; p <= upperLimit; p += gridSpacing) {
                 if (p < priceMin || p > priceMax) continue;
@@ -1219,7 +1268,8 @@
 
                 const yPos = prH - ((p - priceMin) / (priceMax - priceMin || 1)) * prH;
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', '0'); line.setAttribute('x2', '100%'); line.setAttribute('y1', yPos); line.setAttribute('y2', yPos); line.setAttribute('stroke', '#1e293b');
+                line.setAttribute('x1', '0'); line.setAttribute('x2', '100%'); line.setAttribute('y1', yPos); line.setAttribute('y2', yPos); 
+                line.setAttribute('stroke', gridStrokeColor);
                 els.charts.gridLinesGroup.appendChild(line);
             }
             els.charts.gridUpperLabel.innerText = `Upper: ${fmtPrice(upperLimit)}`; els.charts.gridLowerLabel.innerText = `Lower: ${fmtPrice(lowerLimit)}`;
