@@ -4,17 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
+    <!-- ป้องกันการแคชหน้าเว็บ เพื่อบังคับให้ผู้ใช้โหลดเวอร์ชันล่าสุดเสมอ -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     
     <title>TFEX Grid System Backtester</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
         }
     </script>
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -56,6 +59,7 @@
 </head>
 <body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-sans min-h-screen flex flex-col md:flex-row md:h-screen md:overflow-hidden transition-colors duration-300 select-none">
 
+    <!-- Tooltip Overlay -->
     <div id="chartTooltip" class="hidden absolute z-[100] bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 rounded-lg p-3 shadow-2xl pointer-events-none text-xs font-mono w-[220px] transition-opacity duration-75 backdrop-blur-sm">
         <div class="text-slate-500 dark:text-slate-400 mb-1 border-b border-slate-200 dark:border-slate-700 pb-1" id="tt-date">DD/MM/YYYY 00:00</div>
         <div class="flex justify-between items-center py-0.5">
@@ -84,12 +88,14 @@
         </div>
     </div>
 
+    <!-- Sidebar: Control Panel -->
     <div id="sidebar" class="w-full md:w-[320px] bg-white dark:bg-slate-900 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 p-5 flex flex-col z-10 shrink-0 shadow-xl md:h-screen md:overflow-y-auto transition-colors duration-300">
         <div class="flex items-center justify-between mb-5 shrink-0">
             <div class="flex items-center gap-3 text-emerald-600 dark:text-emerald-400">
                 <i data-lucide="database" class="w-7 h-7"></i>
                 <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Grid Backtester</h1>
             </div>
+            <!-- Toggle Light/Dark Mode Button -->
             <button id="themeToggleBtn" class="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm cursor-pointer" title="สลับโหมดสี">
                 <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-amber-400"></i>
                 <i data-lucide="moon" class="w-4 h-4 block dark:hidden text-slate-600"></i>
@@ -125,6 +131,7 @@
                     </div>
                 </div>
                 
+                <!-- Toggle UI สำหรับเลือกวัน-เดือน-ปี -->
                 <div class="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-lg">
                     <button id="btn1Day" class="flex-1 py-1.5 text-[10px] sm:text-xs font-semibold rounded-md transition-colors cursor-pointer text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 bg-transparent">1 วัน</button>
                     <button id="btn1Month" class="flex-1 py-1.5 text-[10px] sm:text-xs font-semibold rounded-md transition-colors cursor-pointer text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 bg-transparent">1 เดือน</button>
@@ -132,6 +139,7 @@
                 </div>
             </div>
 
+            <!-- กล่องเลือกกลยุทธ์ Long / Short -->
             <div class="border-t border-slate-200 dark:border-slate-800 pt-3 mb-1">
                 <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">กลยุทธ์ (Strategy)</label>
                 <div class="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-lg">
@@ -199,6 +207,7 @@
                 </div>
             </div>
             
+            <!-- ส่วนแสดงผลเงินลงทุนแบบซ่อนได้ -->
             <div class="mt-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-sm shadow-inner shrink-0 overflow-hidden transition-colors duration-300">
                 <button id="summaryToggleBtn" class="w-full p-3 flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-semibold hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors focus:outline-none cursor-pointer">
                     <span class="flex items-center gap-2"><i data-lucide="calculator" class="w-4 h-4"></i> ดูสรุปเงินลงทุนที่ต้องใช้</span>
@@ -230,11 +239,13 @@
         </div>
     </div>
 
+    <!-- Draggable Resizer -->
     <div id="resizer" class="hidden md:flex w-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-emerald-500 dark:hover:bg-emerald-500 cursor-col-resize z-20 shrink-0 items-center justify-center transition-colors relative group">
         <div class="absolute -left-2 -right-2 h-full cursor-col-resize z-30"></div>
         <div class="w-0.5 h-10 bg-slate-400 dark:bg-slate-500 group-hover:bg-slate-600 dark:group-hover:bg-white rounded transition-colors"></div>
     </div>
 
+    <!-- Main Content: Dashboard -->
     <div id="main-content" class="flex-1 p-4 md:p-8 w-full relative md:h-screen md:overflow-y-auto">
 
         <div id="loadingOverlay" class="loading-overlay rounded-xl flex bg-white/95 dark:bg-slate-950/95 transition-colors duration-300">
@@ -246,6 +257,7 @@
             <p id="loadingSubtext" class="text-xs text-slate-500 dark:text-slate-400 mt-3 text-center">โปรดรอสักครู่ ระบบกำลังคำนวณข้อมูลขนาดใหญ่</p>
         </div>
 
+        <!-- Stats Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 mt-2">
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm dark:shadow-lg relative overflow-hidden transition-colors duration-300">
                 <div class="absolute top-0 right-0 p-4 opacity-10 text-slate-800 dark:text-white"><i data-lucide="briefcase" class="w-12 h-12"></i></div>
@@ -277,7 +289,9 @@
             </div>
         </div>
 
+        <!-- Charts Section -->
         <div class="space-y-6 pb-10">
+            <!-- 1. Equity Curve Chart -->
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm dark:shadow-lg transition-colors duration-300">
                 <h3 class="text-sm font-semibold text-slate-800 dark:text-white mb-3">การเติบโตของพอร์ต (Equity Curve)</h3>
                 <div class="w-full h-40 bg-slate-50 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800 relative interactive-chart cursor-crosshair transition-colors duration-300">
@@ -298,6 +312,7 @@
                 </div>
             </div>
 
+            <!-- 2. Positions & Drawdown Chart -->
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm dark:shadow-lg transition-colors duration-300">
                 <div class="flex flex-wrap items-center justify-between mb-3">
                     <h3 class="text-sm font-semibold text-slate-800 dark:text-white">สถานะสะสม (Positions) และ Drawdown (%)</h3>
@@ -319,6 +334,7 @@
                 </div>
             </div>
 
+            <!-- 3. Asset Price & Grid Chart -->
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm dark:shadow-lg transition-colors duration-300">
                 <div class="flex flex-wrap items-center justify-between mb-3">
                     <h3 class="text-sm font-semibold text-slate-800 dark:text-white">การเคลื่อนไหวราคา (Close) และเส้น Grid</h3>
@@ -338,6 +354,7 @@
                 </div>
             </div>
 
+            <!-- 4. Trade History Table -->
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm dark:shadow-lg transition-colors duration-300">
                 <div class="flex flex-wrap items-center justify-between mb-3 gap-2">
                     <h3 class="text-sm font-semibold text-slate-800 dark:text-white flex items-center gap-2">
@@ -389,8 +406,8 @@
         const CHART_POINT_LIMIT = 1500; 
         
         const _ds_map = {
-            'set50': 'aHR0cHM6Ly93d3cuZHJvcGJveC5jb20vc2NsL2ZpL3FydjJyMzY0eDhscnQ5OWs1N2x1Yy9TNTAxXzFtX0FMTC5jc3Y/cmxrZXk9ZGIwZ3dtNjY4bTF5eTF4cXBvbHp5ZGpoZyZzdD05Zm05ZWx0ZyZkbD0x',
-            'go': 'aHR0cHM6Ly93d3cuZHJvcGJveC5jb20vc2NsL2ZpL2Vxd2swdXNzcDFiNzFtOTJhZW5oYS9URkVYX0dPXzIwMjVfM20uY3N2P3Jsa2V5PXVpeTRvc3ZsdHB1bHRva245YnpseWFkYXgmc3Q9YWg1cTV4OXQmZGw9MQ=='
+            'set50': 'aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL3RmZXhmZi90ZmV4LWRhdGEvcmVmcy9oZWFkcy9tYWluL2RhdGEvUzUwMV8xbV9BTEwuY3N2',
+            'go': 'aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL3RmZXhmZi90ZmV4LWRhdGEvcmVmcy9oZWFkcy9tYWluL2RhdGEvR08xXzFtX0FMTC5jc3Y='
         };
 
         let masterData = []; 
@@ -685,7 +702,7 @@
             updateDateRangeUI();
         };
 
-        function setupDateInputs() {
+        function setupDateInputs(forceReset = false) {
             if (masterData.length === 0) return;
             
             const uniqueDates = [...new Set(masterData.map(d => d.iso))];
@@ -699,8 +716,8 @@
             els.inputs.endDate.min = uniqueDates[0]; 
             els.inputs.endDate.max = maxD;
             
-            // เติมวันที่อัตโนมัติเมื่อเปิดเว็บครั้งแรก หรือเมื่อช่องยังว่างอยู่
-            if (isFirstLoad || !els.inputs.startDate.value) {
+            // เติมวันที่อัตโนมัติเมื่อเปิดเว็บครั้งแรก หรือเปลี่ยนสินค้า
+            if (isFirstLoad || forceReset || !els.inputs.startDate.value) {
                 els.inputs.startDate.value = minD; 
                 els.inputs.endDate.value = maxD;
                 activeDateRange = 'day';
@@ -787,9 +804,13 @@
                 }
 
                 if (yyyy && mm && dd) {
+                    const cleanIso = `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+                    const sortKey = `${cleanIso} ${timeRaw}`; // สร้าง Key พิเศษไว้ให้จัดเรียงได้เร็วปรู๊ดปร๊าด
+                    
                     parsed.push({
-                        iso: `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`,
+                        iso: cleanIso,
                         time: `${dd.padStart(2, '0')}/${mm.padStart(2, '0')}/${yyyy} ${timeRaw}`, 
+                        sortKey: sortKey,
                         open: openPrice,
                         high: highPrice,
                         low: lowPrice,
@@ -802,11 +823,8 @@
                 updateLoading("กำลังประมวลผลข้อมูล...", 80);
                 await yieldToMain();
                 
-                masterData = parsed.sort((a, b) => {
-                    const timeA = a.iso + ' ' + a.time.split(' ')[1];
-                    const timeB = b.iso + ' ' + b.time.split(' ')[1];
-                    return timeA.localeCompare(timeB);
-                });
+                // ใช้การจัดเรียงความเร็วสูงแบบ Native ไม่ต้องตัด String ใหม่
+                masterData = parsed.sort((a, b) => a.sortKey < b.sortKey ? -1 : (a.sortKey > b.sortKey ? 1 : 0));
 
                 const latestIso = masterData[masterData.length - 1].iso;
                 const formattedLatest = formatToDDMMYY(latestIso);
@@ -815,11 +833,10 @@
                 const baseName = val === 'set50' ? '1. SET50' : '2. GO';
                 if(opt) opt.text = `${baseName} (Last ${formattedLatest})`;
 
-                setupDateInputs(); 
+                setupDateInputs(true); // บังคับอัปเดตวันให้ตรงกับข้อมูลที่เพิ่งโหลดมาใหม่ 100%
                 els.dataStatus.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> โหลดข้อมูลสำเร็จ จำนวน ${masterData.length.toLocaleString()} ข้อมูล</span>`;
                 lucide.createIcons();
                 
-                // บังคับให้คำนวณขอบบนขอบล่างอัตโนมัติตามข้อมูลของ 1 วันล่าสุด
                 triggerAutoCalc(true); 
                 isFirstLoad = false;
 
@@ -863,20 +880,20 @@
         window.addEventListener('DOMContentLoaded', async () => {
             await fetchFromCloud(els.dataSourceSelect.value);
         });
-
+        
         els.dataSourceSelect.addEventListener('change', async (e) => {
             const val = e.target.value;
             masterData = []; 
             
             if (val === 'go') {
-                els.inputs.gridSpacing.value = 1;
-                els.inputs.gridSpacingRange.value = 1;
+                els.inputs.gridSpacing.value = "1";
+                els.inputs.gridSpacingRange.value = "1";
                 els.inputs.multiplier.value = "30"; 
                 els.inputs.margin.value = "15,000";
                 els.inputs.commission.value = "5"; 
             } else {
-                els.inputs.gridSpacing.value = 1;
-                els.inputs.gridSpacingRange.value = 1;
+                els.inputs.gridSpacing.value = "1";
+                els.inputs.gridSpacingRange.value = "1";
                 els.inputs.multiplier.value = "200";
                 els.inputs.margin.value = "15,000";
                 els.inputs.commission.value = "18"; 
@@ -990,7 +1007,7 @@
                 const activeData = masterData.filter(d => d.iso >= sDate && d.iso <= eDate);
                 
                 if (activeData.length === 0) {
-                    els.dataStatus.innerHTML = `<span class="text-amber-500 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> ไม่พบข้อมูลในวันดังกล่าว</span>`;
+                    els.dataStatus.innerHTML = `<span class="text-amber-500 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> ไม่พบข้อมูลในช่วงวันที่เลือก</span>`;
                     lucide.createIcons();
                     els.loadingOverlay.style.display = 'none';
                     return;
@@ -1032,7 +1049,6 @@
                 params.commission = getNum(els.inputs.commission);
                 params.margin = getNum(els.inputs.margin);
                 params.multiplier = getNum(els.inputs.multiplier);
-                params.strategy = document.getElementById('btnStrategyLong').className.includes('emerald') ? 'long' : 'short';
                 
                 if (params.lowerLimit >= params.upperLimit) {
                     els.loadingOverlay.style.display = 'none';
@@ -1284,7 +1300,7 @@
                 els.stats.drawdown.innerText = `-฿${fmtPnl(maxDrawdownAmt)} (${fmtPrice(maxDrawdown)}%)`; 
                 
                 const totalMargin = numGrids * contractsPerGrid * margin;
-                els.info.maxFloatingLoss.innerText = `฿${maxDrawdownAmt.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+                els.info.maxFloatingLoss.innerText = `-฿${maxDrawdownAmt.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
                 els.info.reqCapital.innerText = `฿${(totalMargin + maxDrawdownAmt).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
                 const totalOpens = totalTrades - totalTakeProfits; 
