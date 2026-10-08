@@ -55,6 +55,12 @@
             padding-bottom: 0;
             margin-top: 0;
         }
+        #gridExecutionWarning summary { list-style: none; }
+        #gridExecutionWarning summary::-webkit-details-marker { display: none; }
+        #gridExecutionWarning .grid-execution-tooltip { display: none; }
+        #gridExecutionWarning:hover .grid-execution-tooltip,
+        #gridExecutionWarning:focus-within .grid-execution-tooltip,
+        #gridExecutionWarning[open] .grid-execution-tooltip { display: block; }
     </style>
 </head>
 <body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-sans min-h-screen flex flex-col md:flex-row md:h-screen md:overflow-hidden transition-colors duration-300 select-none">
@@ -174,7 +180,13 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1"><span id="gridSpacingLabel">ช่วงห่างกริด (จุด)</span></label>
+                <div class="flex items-center justify-between gap-2 mb-1 relative">
+                    <label for="gridSpacing" class="block text-sm font-medium text-slate-600 dark:text-slate-400"><span id="gridSpacingLabel">ช่วงห่างกริด (จุด)</span></label>
+                    <details id="gridExecutionWarning">
+                        <summary aria-label="ข้อจำกัดการจับคู่คำสั่งในตลาด" aria-describedby="gridExecutionTooltip" class="cursor-pointer text-amber-600 dark:text-amber-400 text-xs rounded px-2 py-1 border border-amber-300 dark:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500">ⓘ ผลจำลอง</summary>
+                        <div id="gridExecutionTooltip" role="tooltip" class="grid-execution-tooltip absolute top-full left-0 right-0 mt-1 z-40 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 p-3 text-xs leading-relaxed shadow-lg">ผลกำไร/ขาดทุนที่แสดงเป็นการจำลองจากข้อมูลราคา ผลจริงขึ้นอยู่กับราคาและจำนวนสัญญาที่จับคู่คำสั่ง (Match) ได้ในตลาด อาจจะมีความคลาดเคลื่อนจากการทดสอบ</div>
+                    </details>
+                </div>
                 <div class="flex items-center gap-3">
                     <input type="range" id="gridSpacingRange" min="0.1" max="20" step="0.1" value="1" class="w-full accent-emerald-500 cursor-pointer">
                     <input type="number" id="gridSpacing" min="0.1" max="20" step="0.1" value="1" class="bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg py-1.5 px-2 text-sm focus:outline-none focus:border-emerald-500 w-20 text-center text-emerald-600 dark:text-emerald-400 font-mono transition-colors">
@@ -905,6 +917,17 @@
             await fetchFromCloud(els.dataSourceSelect.value);
         });
         
+        function updateGridExecutionWarning() {
+            document.getElementById('gridExecutionWarning').open = false;
+            const text = document.getElementById('gridExecutionTooltip').textContent;
+            for (const id of ['gridSpacing', 'gridSpacingRange', 'btnGrid1', 'btnGrid2', 'btnGrid3']) {
+                const control = document.getElementById(id);
+                control.title = text;
+                control.setAttribute('aria-describedby', 'gridExecutionTooltip');
+            }
+        }
+        updateGridExecutionWarning();
+
         els.dataSourceSelect.addEventListener('change', async (e) => {
             const val = e.target.value;
             masterData = []; 
@@ -913,7 +936,7 @@
             const defaults = {
                 set50: { spacing: 1, step: 0.1, max: 20, multiplier: 200, margin: '15,000', commission: 18, presets: [1, 2, 3] },
                 go: { spacing: 1, step: 0.1, max: 20, multiplier: 30, margin: '15,000', commission: 5, presets: [1, 2, 3] },
-                usd: { spacing: 0.05, step: 0.01, max: 1, multiplier: 1000, margin: '1,500', commission: 5, presets: [0.01, 0.05, 0.10] }
+                usd: { spacing: 0.02, step: 0.01, max: 1, multiplier: 1000, margin: '1,500', commission: 5, presets: [0.02, 0.04, 0.06] }
             }[val];
             for (const input of [els.inputs.gridSpacing, els.inputs.gridSpacingRange]) {
                 input.min = defaults.step;
@@ -926,6 +949,7 @@
             els.inputs.commission.value = defaults.commission;
             document.getElementById('gridSpacingLabel').textContent = val === 'usd' ? 'ช่วงห่างกริด (บาท/USD)' : 'ช่วงห่างกริด (จุด)';
             document.getElementById('usdSettingsNote').hidden = val !== 'usd';
+            updateGridExecutionWarning();
             defaults.presets.forEach((spacing, i) => {
                 const button = document.getElementById(`btnGrid${i + 1}`);
                 button.dataset.spacing = spacing;
